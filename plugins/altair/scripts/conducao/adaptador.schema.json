@@ -1,0 +1,341 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "conducao/adaptador.schema.json",
+  "title": "Declaração do adaptador da condução (.altair/adaptador.json)",
+  "description": "Esquema versionado. Campo novo entra com versão nova, e a anterior segue aceita. A v4 acrescenta `verificacao` (a marca que a Verificação embrulhada liga e as variáveis de produção que ela tira) e `guardas` (a pasta do `<guard>-mode`); a v3 acrescenta `pagina`; a v2 acrescenta `versao` e `codigo`; a v1 (só de dados, sem `versao`) segue aceita. O leitor sem dependência é `adaptador.mjs` (`validar`), que aplica a mesma regra; a forma do código apontado em `codigo` é conferida por `validarCodigo`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "projeto",
+    "operadores",
+    "estado",
+    "log",
+    "pergunta"
+  ],
+  "properties": {
+    "versao": {
+      "enum": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "description": "Versão do esquema; ausente = 1."
+    },
+    "codigo": {
+      "type": "string",
+      "pattern": "^(?:[a-z0-9][a-z0-9-]{0,63}|(?![\\\\/])(?!.*(^|[\\\\/])\\.\\.([\\\\/]|$)).+\\.mjs)$",
+      "description": "A partir da v2: arquivo .mjs do código do adaptador, relativo a `.altair/`, ou o nome de um adaptador embutido no núcleo (minúsculas, dígitos e hífen, a forma de `NOME_EMBUTIDO`, que `ehNomeEmbutido` usa); a existência do embutido é de `adaptador.mjs`, não do esquema."
+    },
+    "pagina": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/relativo"
+        },
+        {
+          "type": "string",
+          "pattern": "^[^`\\r\\n]*$"
+        }
+      ],
+      "description": "A partir da v3: a página do projeto, relativa à raiz do repositório; o brief do `abrir` cita o endereço, entre crases: sem crase nem quebra de linha."
+    },
+    "projeto": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "operadores": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "handle",
+          "nome"
+        ],
+        "properties": {
+          "handle": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "nome": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        }
+      }
+    },
+    "estado": {
+      "$ref": "#/$defs/pasta"
+    },
+    "log": {
+      "$ref": "#/$defs/pasta"
+    },
+    "pergunta": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "destino"
+          ],
+          "properties": {
+            "destino": {
+              "const": "log"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "destino",
+            "pasta"
+          ],
+          "properties": {
+            "destino": {
+              "const": "pasta"
+            },
+            "pasta": {
+              "$ref": "#/$defs/relativo"
+            }
+          }
+        }
+      ]
+    },
+    "conferencia": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "marca"
+            ],
+            "properties": {
+              "marca": {
+                "$ref": "#/$defs/marca"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "marca",
+              "arquivo",
+              "sim",
+              "nao"
+            ],
+            "properties": {
+              "marca": {
+                "$ref": "#/$defs/marca"
+              },
+              "arquivo": {
+                "$ref": "#/$defs/relativo"
+              },
+              "sim": {
+                "$ref": "#/$defs/valores"
+              },
+              "nao": {
+                "$ref": "#/$defs/valores"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "ci": {
+      "type": "boolean"
+    },
+    "sessao": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modosSemClique"
+      ],
+      "properties": {
+        "modosSemClique": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z_]{1,47}$"
+          }
+        }
+      }
+    },
+    "publicacao": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "frasesLegadas"
+      ],
+      "properties": {
+        "frasesLegadas": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^\\r\\n]*\\S[^\\r\\n]*$"
+          }
+        }
+      }
+    },
+    "verificacao": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "marcaSemCofre": {
+          "$ref": "#/$defs/variavel"
+        },
+        "variaveisDeProducao": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/variavel"
+          }
+        }
+      },
+      "description": "Só na v4: o embrulho da Verificação. `marcaSemCofre` é a variável que ele liga em `=1` (default `ALTAIR_SEM_COFRE_PRODUCAO`), que o guard de cofre do projeto lê; `variaveisDeProducao`, as que ele tira do ambiente (`env -u`; default nenhuma)."
+    },
+    "guardas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pastaDoModo"
+      ],
+      "properties": {
+        "pastaDoModo": {
+          "$ref": "#/$defs/relativo"
+        }
+      },
+      "description": "Só na v4: pasta, relativa à raiz do repositório, onde os guards com modo leem `<guard>-mode`; sem o campo, ou sem o arquivo, o guard roda em `shadow`."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "codigo": true
+        },
+        "required": [
+          "codigo"
+        ]
+      },
+      "then": {
+        "properties": {
+          "versao": {
+            "enum": [
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        "required": [
+          "versao"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "pagina": true
+        },
+        "required": [
+          "pagina"
+        ]
+      },
+      "then": {
+        "properties": {
+          "versao": {
+            "enum": [
+              3,
+              4
+            ]
+          }
+        },
+        "required": [
+          "versao"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verificacao": true
+        },
+        "required": [
+          "verificacao"
+        ]
+      },
+      "then": {
+        "properties": {
+          "versao": {
+            "const": 4
+          }
+        },
+        "required": [
+          "versao"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "guardas": true
+        },
+        "required": [
+          "guardas"
+        ]
+      },
+      "then": {
+        "properties": {
+          "versao": {
+            "const": 4
+          }
+        },
+        "required": [
+          "versao"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "relativo": {
+      "type": "string",
+      "pattern": "^(?![\\\\/])(?!.*(^|[\\\\/])\\.\\.([\\\\/]|$)).*\\S.*$"
+    },
+    "pasta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pasta"
+      ],
+      "properties": {
+        "pasta": {
+          "$ref": "#/$defs/relativo"
+        }
+      }
+    },
+    "marca": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+      "not": {
+        "const": "conferencia-do-operador"
+      }
+    },
+    "valores": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+      }
+    },
+    "variavel": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "versao": 4,
+  "codigo": "canonico.mjs",
+  "pagina": "docs/conducao-no-projeto.md",
+  "projeto": "teste",
+  "operadores": [{ "handle": "rita", "nome": "Rita" }],
+  "estado": { "pasta": "altair/conducao" },
+  "log": { "pasta": "." },
+  "pergunta": { "destino": "log" },
+  "ci": true,
+  "sessao": { "modosSemClique": ["auto"] },
+  "publicacao": { "frasesLegadas": ["Sem publicação, por Rita: "] },
+  "conferencia": [
+    {
+      "marca": "gate-de-ux",
+      "arquivo": "gate-de-ux-approval.md",
+      "sim": ["SHIP", "SHIP_WITH_DEBT"],
+      "nao": ["NEEDS_REWORK"]
+    }
+  ],
+  "verificacao": {
+    "marcaSemCofre": "TESTE_SEM_COFRE_PRODUCAO",
+    "variaveisDeProducao": [
+      "SUPABASE_ACCESS_TOKEN",
+      "SUPABASE_DB_PASSWORD",
+      "SUPABASE_DB_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "VERCEL_TOKEN",
+      "OPENROUTER_API_KEY",
+      "GEMINI_API_KEY"
+    ]
+  },
+  "guardas": { "pastaDoModo": ".claude/state" }
+}

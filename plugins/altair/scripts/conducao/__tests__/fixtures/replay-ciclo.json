@@ -1,0 +1,250 @@
+{
+  "fonte": "refs/pull/1/head",
+  "ciclo": "REPLAY-21-ciclo-gravado",
+  "ponta": "0000000000000000000000000000000000000000",
+  "base": "1111111111111111111111111111111111111111",
+  "totalCommits": 70,
+  "nota": "gravada uma vez de um ciclo executado: só subject e posição dos commits com subject de task, em ordem topológica de base..ponta, com o nome do ciclo e o texto do subject trocados por neutros. Divergência do replay vira ajuste da regra de leitura, nunca edição desta fixture.",
+  "commits": [
+    {
+      "posicao": 9,
+      "subject": "REPLAY-21-ciclo-gravado-F0/T1 — trabalho de T1"
+    },
+    {
+      "posicao": 10,
+      "subject": "REPLAY-21-ciclo-gravado-F0/T1 — trabalho de T1"
+    },
+    {
+      "posicao": 11,
+      "subject": "REPLAY-21-ciclo-gravado-F0/T1 — trabalho de T1"
+    },
+    {
+      "posicao": 12,
+      "subject": "REPLAY-21-ciclo-gravado-F0/T2 — trabalho de T2"
+    },
+    {
+      "posicao": 13,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T3 — trabalho de T3"
+    },
+    {
+      "posicao": 14,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T4 — trabalho de T4"
+    },
+    {
+      "posicao": 15,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T5 — trabalho de T5"
+    },
+    {
+      "posicao": 16,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T6 — trabalho de T6"
+    },
+    {
+      "posicao": 17,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T7 — trabalho de T7"
+    },
+    {
+      "posicao": 18,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T8 — trabalho de T8"
+    },
+    {
+      "posicao": 19,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T9 — trabalho de T9"
+    },
+    {
+      "posicao": 20,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T9 — trabalho de T9"
+    },
+    {
+      "posicao": 21,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T9 — trabalho de T9"
+    },
+    {
+      "posicao": 22,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T9 — trabalho de T9"
+    },
+    {
+      "posicao": 23,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T9 — trabalho de T9"
+    },
+    {
+      "posicao": 24,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T9 — trabalho de T9"
+    },
+    {
+      "posicao": 25,
+      "subject": "REPLAY-21-ciclo-gravado-F1/T9 — trabalho de T9"
+    },
+    {
+      "posicao": 26,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T10 — trabalho de T10"
+    },
+    {
+      "posicao": 27,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T11 — trabalho de T11"
+    },
+    {
+      "posicao": 28,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T11 — trabalho de T11"
+    },
+    {
+      "posicao": 29,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T11 — trabalho de T11"
+    },
+    {
+      "posicao": 30,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T11 — trabalho de T11"
+    },
+    {
+      "posicao": 31,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T11 — trabalho de T11"
+    },
+    {
+      "posicao": 32,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T12 — trabalho de T12"
+    },
+    {
+      "posicao": 33,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T12 — trabalho de T12"
+    },
+    {
+      "posicao": 34,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T12 — trabalho de T12"
+    },
+    {
+      "posicao": 35,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T13 — trabalho de T13"
+    },
+    {
+      "posicao": 36,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T13 — trabalho de T13"
+    },
+    {
+      "posicao": 37,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T13 — trabalho de T13"
+    },
+    {
+      "posicao": 38,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T13 — trabalho de T13"
+    },
+    {
+      "posicao": 39,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T13 — trabalho de T13"
+    },
+    {
+      "posicao": 40,
+      "subject": "REPLAY-21-ciclo-gravado-F2/T13 — trabalho de T13"
+    },
+    {
+      "posicao": 41,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T14 — trabalho de T14"
+    },
+    {
+      "posicao": 42,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T14 — trabalho de T14"
+    },
+    {
+      "posicao": 43,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T14 — trabalho de T14"
+    },
+    {
+      "posicao": 44,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T14 — trabalho de T14"
+    },
+    {
+      "posicao": 45,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T14 — trabalho de T14"
+    },
+    {
+      "posicao": 46,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T14 — trabalho de T14"
+    },
+    {
+      "posicao": 47,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 48,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 49,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 50,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 51,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 52,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 53,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 54,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 55,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T15 — trabalho de T15"
+    },
+    {
+      "posicao": 56,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T16 — trabalho de T16"
+    },
+    {
+      "posicao": 57,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T16 — trabalho de T16"
+    },
+    {
+      "posicao": 58,
+      "subject": "REPLAY-21-ciclo-gravado-F3/T16 — trabalho de T16"
+    },
+    {
+      "posicao": 59,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T17 — trabalho de T17"
+    },
+    {
+      "posicao": 60,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T17 — trabalho de T17"
+    },
+    {
+      "posicao": 61,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T18 — trabalho de T18"
+    },
+    {
+      "posicao": 62,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T18 — trabalho de T18"
+    },
+    {
+      "posicao": 63,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T19 — trabalho de T19"
+    },
+    {
+      "posicao": 64,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T19 — trabalho de T19"
+    },
+    {
+      "posicao": 65,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T20 — trabalho de T20"
+    },
+    {
+      "posicao": 66,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T20 — trabalho de T20"
+    },
+    {
+      "posicao": 67,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T20 — trabalho de T20"
+    },
+    {
+      "posicao": 68,
+      "subject": "REPLAY-21-ciclo-gravado-F4/T20 — trabalho de T20"
+    }
+  ]
+}

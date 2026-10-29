@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "log-v1.schema.json",
+  "title": "Log de eventos da condução — v1 (VEGA-29 T11, D-VEGA29-3)",
+  "description": "Uma linha JSONL por elemento, desenho OCEL 2.0 (D-GAME1-21). Arquivo em <pasta>/<projeto>/<ciclo>.jsonl. Linha sem `v` é v0 (pasta antiga, só leitura — D-VEGA29-21) e não casa este esquema. Valores são tokens sem espaço: texto livre, relato, prompt e diff não entram (PHI não atravessa fronteira). Conferido sem ajv por `conferirEsquema` em log-eventos.mjs.",
+  "oneOf": [
+    { "$ref": "#/$defs/objeto" },
+    { "$ref": "#/$defs/relacao" },
+    { "$ref": "#/$defs/evento" },
+    { "$ref": "#/$defs/atributo" }
+  ],
+  "$defs": {
+    "versao": { "type": "integer", "const": 1 },
+    "token": { "type": "string", "pattern": "^[A-Za-z0-9._:/+@-]{1,200}$" },
+    "chave": { "type": "string", "pattern": "^[0-9a-f]{24}$" },
+    "quando": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$"
+    },
+    "procedencia": {
+      "type": "string",
+      "enum": ["intencao", "registrado", "observado"]
+    },
+    "tipoDeObjeto": {
+      "type": "string",
+      "enum": ["ciclo", "fase", "task", "tentativa", "sessao"]
+    },
+    "valorDeAtributo": {
+      "oneOf": [
+        { "$ref": "#/$defs/token" },
+        { "type": "number" },
+        { "type": "boolean" }
+      ]
+    },
+    "objeto": {
+      "type": "object",
+      "required": [
+        "v",
+        "linha",
+        "id",
+        "tipo",
+        "chave",
+        "quando",
+        "procedencia"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": { "$ref": "#/$defs/versao" },
+        "linha": { "const": "objeto" },
+        "id": { "$ref": "#/$defs/token" },
+        "tipo": { "$ref": "#/$defs/tipoDeObjeto" },
+        "chave": { "$ref": "#/$defs/chave" },
+        "quando": { "$ref": "#/$defs/quando" },
+        "procedencia": { "$ref": "#/$defs/procedencia" }
+      }
+    },
+    "relacao": {
+      "type": "object",
+      "required": [
+        "v",
+        "linha",
+        "de",
+        "para",
+        "qualificador",
+        "chave",
+        "quando",
+        "procedencia"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": { "$ref": "#/$defs/versao" },
+        "linha": { "const": "relacao" },
+        "de": { "$ref": "#/$defs/token" },
+        "para": { "$ref": "#/$defs/token" },
+        "qualificador": {
+          "type": "string",
+          "enum": ["pertence-a", "tentativa-de", "executa"]
+        },
+        "chave": { "$ref": "#/$defs/chave" },
+        "quando": { "$ref": "#/$defs/quando" },
+        "procedencia": { "$ref": "#/$defs/procedencia" }
+      }
+    },
+    "evento": {
+      "type": "object",
+      "required": [
+        "v",
+        "linha",
+        "procedencia",
+        "acao",
+        "objetos",
+        "atributos",
+        "chave",
+        "quando"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": { "$ref": "#/$defs/versao" },
+        "linha": { "const": "evento" },
+        "procedencia": { "$ref": "#/$defs/procedencia" },
+        "acao": { "$ref": "#/$defs/token" },
+        "objetos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "tipo", "qualificador"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/token" },
+              "tipo": { "$ref": "#/$defs/tipoDeObjeto" },
+              "qualificador": {
+                "type": "string",
+                "enum": ["conduzido", "da-fase", "alvo", "tentativa", "filha"]
+              }
+            }
+          }
+        },
+        "atributos": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "nonce": { "$ref": "#/$defs/valorDeAtributo" },
+            "nonceTentativa": { "$ref": "#/$defs/valorDeAtributo" },
+            "nonceArquivar": { "$ref": "#/$defs/valorDeAtributo" },
+            "sha": { "$ref": "#/$defs/valorDeAtributo" },
+            "head": { "$ref": "#/$defs/valorDeAtributo" },
+            "plano": { "$ref": "#/$defs/valorDeAtributo" },
+            "base": { "$ref": "#/$defs/valorDeAtributo" },
+            "antes": { "$ref": "#/$defs/valorDeAtributo" },
+            "depois": { "$ref": "#/$defs/valorDeAtributo" },
+            "copia": { "$ref": "#/$defs/valorDeAtributo" },
+            "ref": { "$ref": "#/$defs/valorDeAtributo" },
+            "tentativa": { "$ref": "#/$defs/valorDeAtributo" },
+            "estado": { "$ref": "#/$defs/valorDeAtributo" },
+            "motivo": { "$ref": "#/$defs/valorDeAtributo" },
+            "verificacao": { "$ref": "#/$defs/valorDeAtributo" },
+            "publicacao": { "$ref": "#/$defs/valorDeAtributo" },
+            "desfecho": { "$ref": "#/$defs/valorDeAtributo" },
+            "modo": { "$ref": "#/$defs/valorDeAtributo" },
+            "coberta": { "$ref": "#/$defs/valorDeAtributo" },
+            "vezes": { "$ref": "#/$defs/valorDeAtributo" },
+            "falhas": { "$ref": "#/$defs/valorDeAtributo" },
+            "aviso": { "$ref": "#/$defs/valorDeAtributo" },
+            "decisao": { "type": "string", "pattern": "^d-[0-9a-f]{16}$" },
+            "numero": { "type": "integer" },
+            "opcoes": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,31}([+][a-z0-9][a-z0-9-]{0,31})*$"
+            },
+            "recomendada": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+            },
+            "destinatario": {
+              "type": "string",
+              "enum": ["operador", "responsavel-clinico"]
+            },
+            "textoSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "nonces": { "$ref": "#/$defs/token" }
+          }
+        },
+        "chave": { "$ref": "#/$defs/chave" },
+        "quando": { "$ref": "#/$defs/quando" }
+      }
+    },
+    "atributo": {
+      "type": "object",
+      "required": [
+        "v",
+        "linha",
+        "objeto",
+        "nome",
+        "valor",
+        "evento",
+        "chave",
+        "quando",
+        "procedencia"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": { "$ref": "#/$defs/versao" },
+        "linha": { "const": "atributo" },
+        "objeto": { "$ref": "#/$defs/token" },
+        "nome": { "const": "estado" },
+        "valor": { "$ref": "#/$defs/token" },
+        "evento": { "$ref": "#/$defs/chave" },
+        "chave": { "$ref": "#/$defs/chave" },
+        "quando": { "$ref": "#/$defs/quando" },
+        "procedencia": { "$ref": "#/$defs/procedencia" }
+      }
+    }
+  }
+}
