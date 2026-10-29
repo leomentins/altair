@@ -1,0 +1,11 @@
+{
+  "versao": 4,
+  "codigo": "superpowers",
+  "pagina": "docs/conducao.md",
+  "projeto": "exemplo",
+  "operadores": [{ "handle": "bia", "nome": "Bia" }],
+  "estado": { "pasta": "altair/conducao" },
+  "log": { "pasta": "." },
+  "pergunta": { "destino": "log" },
+  "ci": false
+}
