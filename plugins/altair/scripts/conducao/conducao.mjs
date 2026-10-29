@@ -67,7 +67,7 @@
  *      teto-de-rodadas`), e o brief entrega a rodada B ou C
  *   registrar-conferencia T<k> --rodada carimbo [--sessao <id>]
  *      mesma task, caso por arquivo, approval em NEEDS_REWORK, tentativa trazida que só acrescenta carimbo (`notes/reviews/<sha8>.md`
- *      do ciclo ou `.claude/state/review-carimbo/<sha8>.md`; outro arquivo ⇒ `rodada-carimbo-fora-do-carimbo`):
+ *      do ciclo ou o destino de carimbo do adaptador; outro arquivo ⇒ `rodada-carimbo-fora-do-carimbo`):
  *      grava `Conducao: T<k> tentativa <n> carimbo`, que não conta como rodada nem no teto
  *   recusar-publicacao T<k> [--motivo <texto>]
  *   reverter-trazido T<k> [--motivo <texto>]
@@ -576,7 +576,7 @@ export function textoDoFechamento({ ciclo, repo, sessao, conduzidas, exigirEncer
   return [
     `/close-cycle ${ciclo}`,
     `Ciclo conduzido (worktree: ${arvore}); archive_session da ${anterior} ${sessao ?? "<id da sessão que encerrou>"} antes do Ato A.`,
-    `Até o merge do VEGA-22, ler o /close-cycle de ${RAIZ_DOS_VERBOS}/.claude/skills/close-cycle/SKILL.md e rodar os verbos da condução por essa árvore:`,
+    `Até o merge do VEGA-22, ler o /close-cycle do projeto e rodar os verbos da condução por esta árvore (${RAIZ_DOS_VERBOS}):`,
     `- Ato A §8.9: ${verbos} auditar --repo ${arvore} --ciclo ${ciclo} --ref HEAD --exigir-fases ${conduzidas.join(",")} --exigir-encerramentos ${exigirEncerramentos.join(",")} — diferente de 0 ⇒ parar.`,
     `- Step 10.0: ${verbos} limpar --repo ${arvore} --ciclo ${ciclo}`,
   ].join("\n");
@@ -632,16 +632,28 @@ function epoch(v) {
   return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
 }
 
-const UNIDADE_PONTE = "claude-remote-control.service";
+/**
+ * A unidade de usuário da ponte, da declaração (`sessao.ponte.unidade`, v5):
+ * o núcleo não nomeia host nem ponte (T30, D-VEGA29-15). Declaração ilegível
+ * ou sem o campo ⇒ `null`.
+ */
+function unidadeDaPonte(repo) {
+  try {
+    return adaptador.lerAdaptador(repo).sessao.ponte?.unidade ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Hora (epoch s) em que a ponte entrou em `active` pela última vez — o
  * `ActiveEnterTimestamp` da unidade de usuário. `null` quando não se lê
- * (sem systemd de usuário, unidade ausente, nunca ativa).
+ * (sem systemd de usuário, unidade ausente ou não declarada, nunca ativa).
  */
-export function ponteAtivaDesde() {
+export function ponteAtivaDesde(unidade) {
+  if (!unidade) return null;
   try {
-    const v = execFileSync("systemctl", ["--user", "show", UNIDADE_PONTE, "-p", "ActiveEnterTimestamp", "--value", "--timestamp=unix"], {
+    const v = execFileSync("systemctl", ["--user", "show", unidade, "-p", "ActiveEnterTimestamp", "--value", "--timestamp=unix"], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
       timeout: 10_000,
@@ -673,7 +685,7 @@ export function reinicioConfirmado(reinicio, ativaDesde) {
 }
 
 /** Lê o arquivo do `--reinicio` e o confirma pela ponte; devolve `{ reinicio, confirmacao }`. */
-function carregarReinicio(arquivo, ativaDesdeFlag) {
+function carregarReinicio(arquivo, ativaDesdeFlag, repo) {
   if (!arquivo || !existsSync(arquivo)) return { reinicio: null, confirmacao: null };
   let reg;
   try {
@@ -681,7 +693,7 @@ function carregarReinicio(arquivo, ativaDesdeFlag) {
   } catch {
     return { reinicio: null, confirmacao: { valido: false, motivo: "registro-ilegivel" } };
   }
-  const ativaDesde = ativaDesdeFlag !== undefined ? epoch(ativaDesdeFlag) : ponteAtivaDesde();
+  const ativaDesde = ativaDesdeFlag !== undefined ? epoch(ativaDesdeFlag) : ponteAtivaDesde(unidadeDaPonte(repo));
   const confirmacao = reinicioConfirmado(reg, ativaDesde);
   return { reinicio: confirmacao.valido ? reg : null, confirmacao };
 }
@@ -1313,10 +1325,10 @@ export function decidirCi({ pushEm, runs, pr, agora = null, sha = null, prazoMin
       aviso: `a proposta aponta para ${pr.headRefOid.slice(0, 8)}, não para o ${sha.slice(0, 8)} empurrado — empurrar antes de ler veredito`,
     };
 
-  const doPush = runs.filter(
+  const dePush = runs.filter(
     (r) => (!alvo || casaSha(r.headSha ?? "", alvo)) && Date.parse(r.createdAt ?? "") >= tPush - FOLGA_RELOGIO_MS,
   );
-  if (!doPush.length) {
+  if (!dePush.length) {
     const prazoEm = tPush + prazoMin * 60_000;
     if (tAgora < prazoEm) return { acao: "esperar", motivo: "run-nao-nasceu", ...base, ate: new Date(prazoEm).toISOString() };
     const minutos = Math.floor((tAgora - tPush) / 60_000);
@@ -1330,17 +1342,17 @@ export function decidirCi({ pushEm, runs, pr, agora = null, sha = null, prazoMin
       acao: "avisar",
       veredito: "sem-run",
       ...base,
-      minutosDesdeOPush: minutos,
+      minutosDesdePush: minutos,
       aviso: `nenhum run do CI ${minutos} min depois do push (prazo ${prazoMin} min): ${porque}`,
     };
   }
-  const emCurso = doPush.filter((r) => r.status !== "completed");
+  const emCurso = dePush.filter((r) => r.status !== "completed");
   if (emCurso.length) return { acao: "esperar", motivo: "run-em-curso", ...base, runs: emCurso.map((r) => r.databaseId ?? null) };
   return {
     acao: "ler-run",
     ...base,
-    runs: doPush.map((r) => ({ id: r.databaseId ?? null, workflow: r.workflowName ?? null, conclusion: r.conclusion ?? null })),
-    lerPorDentro: doPush.map((r) => `gh run view ${r.databaseId} --log`),
+    runs: dePush.map((r) => ({ id: r.databaseId ?? null, workflow: r.workflowName ?? null, conclusion: r.conclusion ?? null })),
+    lerPorDentro: dePush.map((r) => `gh run view ${r.databaseId} --log`),
     aviso: veredito,
   };
 }
@@ -1384,7 +1396,7 @@ function listaYaml(linhas, i, valorInline) {
  * push. `soMain` só quando `branches` é exatamente `[main]`, sem `tags` nem
  * `branches-ignore` — qualquer outra forma dispara em push fora de `main`.
  */
-export function gatilhoPush(texto) {
+export function gatilhoDePush(texto) {
   const linhas = texto.split(/\r?\n/).map((l) => l.replace(COMENTARIO_YAML, "").replace(/\s+$/, ""));
   const reOn = /^["']?(on|true)["']?:/;
   const iOn = linhas.findIndex((l) => reOn.test(l));
@@ -1446,7 +1458,7 @@ export function conferirWorkflows({ repo }) {
   for (const nome of readdirSync(pasta).filter((n) => /\.ya?ml$/.test(n)).sort()) {
     const arquivo = `.github/workflows/${nome}`;
     const texto = readFileSync(path.join(pasta, nome), "utf8");
-    const push = gatilhoPush(texto);
+    const push = gatilhoDePush(texto);
     const secrets = linhasComSecrets(texto);
     conferidos.push({ arquivo, push: push ? (push.soMain ? "main" : "fora-de-main") : "sem-push", secrets: secrets.length });
     if (push && !push.soMain && secrets.length)
@@ -1780,7 +1792,7 @@ export function main(argv) {
     if (verbo === "reinicio-valido") {
       const arquivo = flag(resto, "--arquivo");
       if (!arquivo) return sair(2, "reinicio-valido exige --arquivo <ponte-reinicio.json>");
-      const { confirmacao } = carregarReinicio(arquivo, flag(resto, "--ponte-ativa-desde"));
+      const { confirmacao } = carregarReinicio(arquivo, flag(resto, "--ponte-ativa-desde"), repo);
       const saida = confirmacao ?? { valido: false, motivo: "sem-registro" };
       process.stdout.write(`${JSON.stringify(saida)}\n`);
       return saida.valido ? 0 : 1;
@@ -1800,7 +1812,7 @@ export function main(argv) {
     }
     let saida;
     if (verbo === "proximo") {
-      const { reinicio, confirmacao } = carregarReinicio(flag(resto, "--reinicio"), flag(resto, "--ponte-ativa-desde"));
+      const { reinicio, confirmacao } = carregarReinicio(flag(resto, "--reinicio"), flag(resto, "--ponte-ativa-desde"), repo);
       if (confirmacao && !confirmacao.valido)
         process.stderr.write(`conducao: registro de reinício ignorado (${confirmacao.motivo}) — a queda não fica coberta\n`);
       const nivel = resto.includes("--nivel") ? (flag(resto, "--nivel") ?? "") : null;

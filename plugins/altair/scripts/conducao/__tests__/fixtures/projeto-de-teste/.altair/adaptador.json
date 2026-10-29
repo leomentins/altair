@@ -1,5 +1,5 @@
 {
-  "versao": 4,
+  "versao": 5,
   "codigo": "canonico.mjs",
   "pagina": "docs/conducao-no-projeto.md",
   "projeto": "teste",
@@ -8,7 +8,14 @@
   "log": { "pasta": "." },
   "pergunta": { "destino": "log" },
   "ci": true,
-  "sessao": { "modosSemClique": ["auto"] },
+  "sessao": {
+    "modosSemClique": ["auto"],
+    "cli": ["host-de-teste", "plugin", "list", "--json"],
+    "settings": [".host/settings.json", ".host/settings.local.json"],
+    "variavelDoTrafego": "HOST_DE_TESTE_SEM_TRAFEGO",
+    "ponte": { "unidade": "ponte-de-teste.service" },
+    "instrucoes": ["**/CLAUDE.md"]
+  },
   "publicacao": { "frasesLegadas": ["Sem publicação, por Rita: "] },
   "conferencia": [
     {
@@ -30,5 +37,6 @@
       "GEMINI_API_KEY"
     ]
   },
-  "guardas": { "pastaDoModo": ".claude/state" }
+  "guardas": { "pastaDoModo": ".claude/state" },
+  "tiers": { "mecanico": "modelo-barato", "parecer": "modelo-medio", "critico": "modelo-forte" }
 }

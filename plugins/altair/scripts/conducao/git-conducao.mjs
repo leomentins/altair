@@ -588,7 +588,14 @@ export function trazer({ repo, ciclo, task, tentativa, shaAvisado = null, sessao
   exigir(t, "task-ausente", `${task} não está no plano congelado`);
   const canonico = caminhoDoCanonico(repo, "HEAD", ciclo);
   caminhos = verbos.comCanonico({ cru, caminhos, canonico });
-  const motivos = verbos.motivosParaPerguntar({ caminhos, canonico, outputs: t.outputs, passos: t.passos ?? [], codigo: codigoDoAdaptador(repo) });
+  const motivos = verbos.motivosParaPerguntar({
+    caminhos,
+    canonico,
+    outputs: t.outputs,
+    passos: t.passos ?? [],
+    codigo: codigoDoAdaptador(repo),
+    instrucoes: lerAdaptador(repo).sessao.instrucoes,
+  });
   const semAprovacao = verbos.exigirAprovacao({ base, ponta, aprovado, motivos, confere: () => aprovadoConfere(repo, aprovado, ponta) });
   if (semAprovacao) return semAprovacao;
 

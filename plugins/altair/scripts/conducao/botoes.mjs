@@ -91,22 +91,25 @@ export const BOTOES = Object.freeze({
   /**
    * Superfícies de instrução: o que a maestra (ou o harness dela) lê como
    * instrução ou permissão no turno seguinte — settings, skills, regras,
-   * agentes, `CLAUDE.md`, MCP e o que decide CI e revisão. Trabalho de filha
+   * agentes, `AGENTS.md`, MCP e o que decide CI e revisão. Trabalho de filha
    * que toca isto pergunta antes de trazer, separado do alcance dos hooks.
    * Origem: MAJOR do security-reviewer no fechamento de F2, ruling 16.1a de
    * o operador (15/10/2026).
    * Muda quando: nasce arquivo que o harness lê como instrução fora daqui.
+   * A pasta de configuração do host não tem nome no núcleo (T30, D-VEGA29-15):
+   * vale qualquer pasta oculta da raiz (o glob começa por `.*`), que pergunta
+   * a mais, nunca a menos; o arquivo de instrução que o host lê pelo nome vem
+   * da declaração (`sessao.instrucoes`), somado a esta lista.
    */
   superficiesDeInstrucao: Object.freeze([
-    ".claude/settings*.json",
-    ".claude/skills/**",
-    ".claude/rules/**",
-    ".claude/agents/**",
-    ".claude/commands/**",
-    ".claude/workflows/**",
-    ".claude/launch.json",
+    ".*/settings*.json",
+    ".*/skills/**",
+    ".*/rules/**",
+    ".*/agents/**",
+    ".*/commands/**",
+    ".*/workflows/**",
+    ".*/launch.json",
     "**/AGENTS.md",
-    "**/CLAUDE.md",
     ".mcp.json",
     // Código do adaptador do projeto (T20): o núcleo o carrega e executa na
     // maestra — filha que o muda pergunta antes de trazer.
@@ -117,23 +120,24 @@ export const BOTOES = Object.freeze({
 
   /**
    * Base fixa do alcance: o que os hooks de commit da maestra executam, mais
-   * `.claude/state/` e os verbos de publicação. Trabalho de filha que toca
-   * isto pergunta antes de trazer (D-VEGA22-17). A T8 deriva e confere a
-   * lista contra os próprios hooks; aqui mora só o valor.
+   * a pasta de estado do host (pasta oculta, glob `.*`) e os verbos de
+   * publicação. Trabalho de filha que toca isto pergunta antes de trazer
+   * (D-VEGA22-17). A T8 deriva e confere a lista contra os próprios hooks;
+   * aqui mora só o valor.
    * Origem: esboço §Paradas para o operador, §2.2#8 e rulings 1a e PD-2 do
    * plan-review v1; `.squawk.toml` e `packages/flow-synthesis/src/spec/**`
    * entraram na T8, achados pela extração (o `pre-commit` roda o validador
    * de flow, que lê o schema ao lado, e o squawk com essa config) — a
-   * medição §2.2#8 só olhou `.claude/`.
+   * medição §2.2#8 só olhou a pasta do host.
    * Muda quando: um hook de commit passa a chamar algo fora dela (o teste da
    * T8 falha).
    */
   baseAlcance: Object.freeze([
     ".husky/**",
-    ".claude/hooks/**",
-    ".claude/scripts/**",
-    ".claude/state/**",
-    ".claude/rules/financial.md",
+    ".*/hooks/**",
+    ".*/scripts/**",
+    ".*/state/**",
+    ".*/rules/financial.md",
     "**/package.json",
     "turbo.json",
     "pnpm-lock.yaml",

@@ -239,17 +239,19 @@ test("anexarAoBrief: sem página nem não, o brief volta byte a byte; com eles, 
 });
 
 test("a página é campo da versão 3 em diante, caminho relativo; a declaração do projeto de teste a aponta", () => {
-  assert.equal(DECLARACAO.versao, 4);
-  const { verificacao, guardas, ...v3 } = DECLARACAO;
+  assert.equal(DECLARACAO.versao, 5);
+  const { verificacao, guardas, tiers, sessao, ...resto } = DECLARACAO;
   void verificacao;
   void guardas;
+  void tiers;
+  const v3 = { ...resto, sessao: { modosSemClique: sessao.modosSemClique } };
   assert.equal(validar({ ...v3, versao: 3 }).pagina, PAGINA, "a v3 segue aceita com a página");
   assert.equal(DECLARACAO.pagina, PAGINA);
   assert.equal(validar(DECLARACAO).pagina, PAGINA);
   assert.equal(lerAdaptador(RAIZ).pagina, PAGINA);
   assert.equal(paginaDoProjeto(RAIZ), PAGINA);
   const recusa = (d, re) => assert.throws(() => validar(d), (e) => e instanceof ErroAdaptador && re.test(e.message));
-  recusa({ ...DECLARACAO, versao: 2 }, /pagina: só na versao 3/);
+  recusa({ ...v3, versao: 2 }, /pagina: só na versao 3/);
   recusa({ ...DECLARACAO, pagina: "../fora.md" }, /pagina: caminho fora da raiz/);
   recusa({ ...DECLARACAO, pagina: "/abs.md" }, /pagina: caminho fora da raiz/);
   recusa({ ...DECLARACAO, pagina: " " }, /pagina: esperado caminho relativo/);

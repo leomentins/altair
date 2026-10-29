@@ -60,15 +60,16 @@ export function segmentosDosSteps(passos = [], codigo = codigoDoNucleo()) {
  * "sim" da fase já o aprovaram, e a Verificação roda o mesmo código logo
  * depois de trazer (D-VEGA22-17). `alcance` é o leitor dos hooks
  * (`hooks-alcance.mjs`); injetável para o teste não depender da árvore.
- * Caminho clínico e tela dos Steps vêm do código do adaptador (`codigo`, T20).
+ * Caminho clínico e tela dos Steps vêm do código do adaptador (`codigo`, T20);
+ * os arquivos de instrução do host, da declaração (`instrucoes`, T30).
  */
-export function motivosParaPerguntar({ caminhos, canonico, outputs, passos = [], alcance = alcanca, codigo = codigoDoNucleo() }) {
+export function motivosParaPerguntar({ caminhos, canonico, outputs, passos = [], alcance = alcanca, codigo = codigoDoNucleo(), instrucoes = [] }) {
   const motivos = [];
-  // Só Output declarado como ARQUIVO libera: diretório declarado (`.claude/`,
+  // Só Output declarado como ARQUIVO libera: diretório declarado (a pasta do host,
   // `.husky/`) liberaria todo hook embaixo dele sem pergunta.
   const hooks = alcance(caminhos).filter((c) => !outputs.includes(c));
   if (hooks.length) motivos.push({ motivo: "alcance-dos-hooks", caminhos: hooks });
-  const instrucao = caminhos.filter((c) => casaAlgum(c, BOTOES.superficiesDeInstrucao));
+  const instrucao = caminhos.filter((c) => casaAlgum(c, [...BOTOES.superficiesDeInstrucao, ...instrucoes]));
   if (instrucao.length) motivos.push({ motivo: "superficie-de-instrucao", caminhos: instrucao });
   if (caminhos.includes(canonico)) motivos.push({ motivo: "canonico-do-ciclo", caminhos: [canonico] });
   const segmentos = segmentosDosSteps(passos, codigo);
