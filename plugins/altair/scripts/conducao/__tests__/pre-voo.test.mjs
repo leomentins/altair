@@ -193,6 +193,23 @@ describe("pré-voo: uma falha por conferência", () => {
     falhouSo(p, preVoo(p), "plugin-carregado", /altair fora da lista/);
   });
 
+  test("sem como provar que é de outro projeto, a entrada conta: git mudo ou projectPath que não resolve", () => {
+    const outro = { id: "altair@outro-marketplace", scope: "project", enabled: true, projectPath: tmp("pre-voo-outro-") };
+    const p = projeto({ lista: [...LISTA_VERDE, outro] });
+    assert.equal(preVoo(p).status, 0);
+    writeFileSync(path.join(p.bin, "git"), "#!/bin/sh\nexit 128\n");
+    chmodSync(path.join(p.bin, "git"), 0o755);
+    falhouSo(p, preVoo(p), "instalacao-unica", /2 instalações de altair/);
+    const q = projeto({ lista: [...LISTA_VERDE, { ...outro, projectPath: path.join(tmp("pre-voo-sumiu-"), "nao-existe") }] });
+    falhouSo(q, preVoo(q), "instalacao-unica", /2 instalações de altair/);
+  });
+
+  test("projectPath relativo resolve contra a raiz do projeto, não contra o cwd do processo", () => {
+    const p = projeto();
+    writeFileSync(path.join(p.bin, "lista.json"), JSON.stringify([...LISTA_VERDE, { id: "altair@outro-marketplace", scope: "project", enabled: true, projectPath: "." }]));
+    falhouSo(p, preVoo(p), "instalacao-unica", /2 instalações de altair/);
+  });
+
   test("contraprova: instalação de projeto com projectPath deste projeto conta, inclusive vista de uma worktree", () => {
     const p = projeto();
     const deste = { id: "altair@outro-marketplace", scope: "project", enabled: true, projectPath: p.repo };
