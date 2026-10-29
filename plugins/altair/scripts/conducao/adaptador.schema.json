@@ -398,28 +398,44 @@
       "if": {
         "properties": {
           "sessao": {
+            "type": "object",
             "anyOf": [
               {
+                "properties": {
+                  "cli": true
+                },
                 "required": [
                   "cli"
                 ]
               },
               {
+                "properties": {
+                  "settings": true
+                },
                 "required": [
                   "settings"
                 ]
               },
               {
+                "properties": {
+                  "variavelDoTrafego": true
+                },
                 "required": [
                   "variavelDoTrafego"
                 ]
               },
               {
+                "properties": {
+                  "ponte": true
+                },
                 "required": [
                   "ponte"
                 ]
               },
               {
+                "properties": {
+                  "instrucoes": true
+                },
                 "required": [
                   "instrucoes"
                 ]
