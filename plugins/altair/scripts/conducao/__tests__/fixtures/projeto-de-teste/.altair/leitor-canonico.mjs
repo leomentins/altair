@@ -123,6 +123,7 @@ export function parseTasks(parsed) {
         id: mFase[1],
         title: mFase[2],
         model: /\*\*Modelo:\*\*\s*([a-z]+)/.exec(h.title)?.[1] ?? null,
+        tier: /\*\*Tier:\*\*\s*([a-z]+)/.exec(h.title)?.[1] ?? null,
         mode: /\*\*Modo:\*\*\s*([a-z]+)/.exec(h.title)?.[1] ?? null,
         line: h.line,
       };

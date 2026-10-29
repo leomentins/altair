@@ -12,6 +12,8 @@
  *
  *   **Fase:** F<n>                  — no topo, OPCIONAL (default F1): o arquivo é uma fase
  *   **Modelo:** <texto>             — no topo, OPCIONAL: o modelo da fase
+ *   **Tier:** <tier>                — no topo, OPCIONAL: o tier da fase (`mecanico` · `parecer` ·
+ *                                     `critico` · `inherit`, default `inherit`); a tarefa o troca
  *   **Largura do ciclo:** <n>       — no topo, OPCIONAL: ausente cai no padrão do núcleo
  *   ### Tarefa <n>: <título>        — a tarefa `T<n>` (`### Task <n>:` também)
  *   **Arquivos:** / **Files:**      — a lista `- Criar|Modificar|Teste: \`caminho\`` vira os Outputs
@@ -27,6 +29,7 @@
  *                                                     (`fechamento-de-fase`, `conferencia-do-operador`)
  *   **Independente:** sim · **Prazo:** <n> min · **Verificação pós-merge:** sim
  *   **Commit:** <subject>                           — OPCIONAL: sem ela, o `-m "…"` do `git commit`
+ *   **Tier:** <tier>                                — OPCIONAL: o tier da tarefa, acima do da fase
  *
  * Nada é adivinhado: estação, publicação e sensibilidade vêm só da anotação, nunca do
  * texto (o passo que diz `db push` ou "o operador abre no celular" não muda nada). Tarefa
@@ -88,7 +91,7 @@ function valor(bruto) {
 }
 
 /** As chaves de anotação que o adaptador lê; `Estacao` e `estação` são `Estação`. */
-const CHAVES = Object.freeze(["Estação", "Publicação", "Sensível", "Verificação", "Verificação pós-merge", "Marcas", "Independente", "Prazo", "Commit", "Arquivos", "Files"]);
+const CHAVES = Object.freeze(["Estação", "Publicação", "Sensível", "Verificação", "Verificação pós-merge", "Marcas", "Independente", "Prazo", "Commit", "Tier", "Arquivos", "Files"]);
 const semAcento = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 const PELA_FORMA = new Map(CHAVES.map((c) => [semAcento(c), c]));
 function chave(campo) {
@@ -166,7 +169,7 @@ function lerTopo(L, fim) {
   for (const { linha, codigo } of L.slice(0, fim)) {
     if (codigo) continue;
     const a = ANOTACAO_RE.exec(linha);
-    const campo = a && ({ fase: "Fase", modelo: "Modelo", "largura do ciclo": "Largura do ciclo" })[semAcento(a[1])];
+    const campo = a && ({ fase: "Fase", modelo: "Modelo", tier: "Tier", "largura do ciclo": "Largura do ciclo" })[semAcento(a[1])];
     if (campo && !topo.has(campo)) topo.set(campo, valor(a[2]));
   }
   return topo;
@@ -312,6 +315,7 @@ export function lerPlanoPublico(texto) {
     if (a.has("Verificação")) bullets.set("Verificação", `\`${a.get("Verificação")}\``);
     if (publicacao) bullets.set("Publicação", MARCA_PUBLICACAO);
     if (lida.commit) bullets.set("Commit", lida.commit);
+    if (a.has("Tier")) bullets.set("Tier", a.get("Tier"));
     tasks.push({ id: t.id, title: t.titulo, phase: fase, bullets, satisfiesRaw: marcas.length ? `(${marcas.join(", ")})` : "" });
   }
   if (tasks.length && !tasks.some((t) => /\bfechamento-de-fase\b/.test(t.satisfiesRaw)))
@@ -319,7 +323,7 @@ export function lerPlanoPublico(texto) {
 
   return {
     ciclo: null,
-    fases: [{ id: fase, model: topo.get("Modelo") ?? null }],
+    fases: [{ id: fase, model: topo.get("Modelo") ?? null, tier: topo.get("Tier") ?? null }],
     tasks,
     declaracoes: { largura, porTask, invalidas, ausentes, anotacoes, aPerguntar: [...aPerguntar] },
   };

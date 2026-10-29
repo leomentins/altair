@@ -54,7 +54,7 @@ describe("o plano de exemplo", () => {
     });
     assert.deepEqual(lido.declaracoes.invalidas, []);
     assert.deepEqual(lido.declaracoes.aPerguntar, []);
-    assert.deepEqual(lido.fases, [{ id: "F2", model: null }]);
+    assert.deepEqual(lido.fases, [{ id: "F2", model: null, tier: null }]);
     assert.equal(lido.declaracoes.largura, 1);
   });
 
@@ -79,7 +79,7 @@ describe("o plano de exemplo", () => {
     assert.deepEqual(t("T2").deps, []);
     assert.deepEqual(t("T3").deps, ["T2"]);
     assert.equal(t("T2").prazoMin, 45);
-    assert.deepEqual(plano.fases, [{ id: "F2", modelo: null, tasks: ["T1", "T2", "T3", "T4", "T5"] }]);
+    assert.deepEqual(plano.fases, [{ id: "F2", modelo: null, tier: "inherit", tasks: ["T1", "T2", "T3", "T4", "T5"] }]);
   });
 
   test("nada é adivinhado do texto: `db push`, `vercel --prod` e a Rita na prosa não mudam a tarefa", () => {
