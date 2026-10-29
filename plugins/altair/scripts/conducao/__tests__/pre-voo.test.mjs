@@ -199,9 +199,21 @@ describe("pré-voo: uma falha por conferência", () => {
     assert.equal(preVoo(p).status, 0);
     writeFileSync(path.join(p.bin, "git"), "#!/bin/sh\nexit 128\n");
     chmodSync(path.join(p.bin, "git"), 0o755);
-    falhouSo(p, preVoo(p), "instalacao-unica", /2 instalações de altair/);
+    falhouSo(p, preVoo(p), "instalacao-unica", /2 instalações de altair .*1 sem prova de serem deste projeto: o git não disse a árvore principal/);
     const q = projeto({ lista: [...LISTA_VERDE, { ...outro, projectPath: path.join(tmp("pre-voo-sumiu-"), "nao-existe") }] });
-    falhouSo(q, preVoo(q), "instalacao-unica", /2 instalações de altair/);
+    falhouSo(q, preVoo(q), "instalacao-unica", /2 instalações de altair .*não resolve/);
+  });
+
+  test("instalação que não deu para provar deste projeto não carrega o plugin aqui: git mudo ou projectPath que não resolve", () => {
+    const outro = { id: "altair@marketplace-de-teste", scope: "project", enabled: true, projectPath: tmp("pre-voo-outro-") };
+    const p = projeto({ lista: [outro] });
+    writeFileSync(path.join(p.bin, "git"), "#!/bin/sh\nexit 128\n");
+    chmodSync(path.join(p.bin, "git"), 0o755);
+    falhouSo(p, preVoo(p), "plugin-carregado", /ligado só em instalação que não deu para provar deste projeto: o git não disse a árvore principal/);
+    const q = projeto({ lista: [{ ...outro, projectPath: path.join(tmp("pre-voo-sumiu-"), "nao-existe") }] });
+    falhouSo(q, preVoo(q), "plugin-carregado", /ligado só em instalação que não deu para provar deste projeto: projectPath .* não resolve/);
+    const m = projeto({ lista: [{ ...outro, projectPath: 42 }] });
+    falhouSo(m, preVoo(m), "plugin-carregado", /projectPath inválido \(42\)/);
   });
 
   test("projectPath relativo resolve contra a raiz do projeto, não contra o cwd do processo", () => {

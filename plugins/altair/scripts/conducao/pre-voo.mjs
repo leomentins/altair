@@ -10,8 +10,9 @@
  *                      entrada de escopo de projeto com `projectPath` de OUTRO projeto
  *                      não conta (nem aqui nem em `plugin-carregado`): a lista do host
  *                      é da máquina, e a instalação de um vizinho não é deste projeto;
- *                      sem como provar que é de outro (git mudo, caminho que não
- *                      resolve), a entrada conta
+ *                      sem como provar de quem é (git mudo, caminho que não resolve),
+ *                      a entrada conta como duplicata aqui e não prova o plugin
+ *                      ligado em `plugin-carregado` — nos dois, o lado que recusa
  *   ponte-com-restart  `systemctl --user show <sessao.ponte.unidade>` dá `Restart` ≠ `no`;
  *                      sem a unidade declarada sai `nao-declarada`, como aviso
  *   trafego-ligado     a variável que desliga o tráfego não essencial
@@ -68,47 +69,57 @@ const naoDeclarado = (conferencia, campo) =>
 /**
  * As raízes que contam como "este projeto" para o `projectPath` da lista: a árvore
  * conduzida e, quando ela é worktree, a árvore principal do mesmo repositório (o
- * host grava a instalação de projeto contra a principal). `inconclusivo` quando o
- * git não disse qual é a principal: aí nenhuma entrada sai do filtro (o pré-voo
- * fica no lado que recusa, nunca no que deixa passar calado).
+ * host grava a instalação de projeto contra a principal). `inconclusivo` traz o
+ * motivo quando o git não disse qual é a principal (ou um caminho não resolveu):
+ * aí toda entrada com `projectPath` fica duvidosa (`doProjeto`).
  */
 export function raizesDoProjeto(repo, { env, prazoMs } = {}) {
   const raizes = new Set([path.resolve(repo)]);
   try {
     raizes.add(realpathSync(repo));
-  } catch {
-    return { raizes, inconclusivo: true };
+  } catch (e) {
+    return { raizes, inconclusivo: `a raiz do projeto não resolve (${e.code ?? e.message})` };
   }
   const r = rodar(["git", "-C", repo, "rev-parse", "--path-format=absolute", "--git-common-dir"], { env, prazoMs });
-  if (!r.ok || !r.stdout.trim()) return { raizes, inconclusivo: true };
+  if (!r.ok) return { raizes, inconclusivo: `o git não disse a árvore principal (${r.encontrado})` };
+  if (!r.stdout.trim()) return { raizes, inconclusivo: "o git não disse a árvore principal (resposta vazia)" };
   const principal = path.dirname(r.stdout.trim());
   raizes.add(principal);
   try {
     raizes.add(realpathSync(principal));
-  } catch {
-    return { raizes, inconclusivo: true };
+  } catch (e) {
+    return { raizes, inconclusivo: `a árvore principal não resolve (${e.code ?? e.message})` };
   }
-  return { raizes, inconclusivo: false };
+  return { raizes, inconclusivo: null };
 }
 
 /**
- * A entrada é deste projeto: sem `projectPath` (user, local, pasta de skills), com ele
- * numa das raízes, ou quando não dá para dizer que é de outro (raízes inconclusivas,
- * `projectPath` que não resolve no disco). `projectPath` relativo resolve contra `repo`.
+ * De quem é a entrada: `{ de: "deste" }` sem `projectPath` (user, local, pasta de
+ * skills) ou com ele numa das raízes; `{ de: "outro" }` com ele resolvido fora delas;
+ * `{ de: "duvidosa", motivo }` quando não dá para provar nem um nem outro (raízes
+ * inconclusivas, `projectPath` que não resolve no disco). Relativo resolve contra `repo`.
+ *
+ * A duvidosa vai para o lado que recusa em cada conferência: conta como segunda
+ * instalação em `instalacao-unica` e não prova o plugin ligado em `plugin-carregado`.
  */
 export function doProjeto(entrada, { raizes, inconclusivo }, repo) {
   const p = entrada?.projectPath;
-  if (typeof p !== "string" || !p || inconclusivo) return true;
+  if (p === undefined || p === null || p === "") return { de: "deste" };
+  if (typeof p !== "string") return { de: "duvidosa", motivo: `projectPath inválido (${JSON.stringify(p)})` };
+  if (inconclusivo) return { de: "duvidosa", motivo: inconclusivo };
   const absoluto = path.resolve(repo, p);
-  if (raizes.has(absoluto)) return true;
+  if (raizes.has(absoluto)) return { de: "deste" };
   try {
-    return raizes.has(realpathSync(absoluto));
-  } catch {
-    return true;
+    return { de: raizes.has(realpathSync(absoluto)) ? "deste" : "outro" };
+  } catch (e) {
+    return { de: "duvidosa", motivo: `projectPath ${p} não resolve (${e.code ?? e.message})` };
   }
 }
 
-/** A lista de plugins do host: `{ entradas }` (as do plugin da condução, deste projeto) ou `{ erro }`. */
+/**
+ * A lista de plugins do host: `{ entradas, duvidosas }` (as do plugin da condução: as
+ * provadas deste projeto e as que não deu para provar, com o motivo) ou `{ erro }`.
+ */
 function lerLista(decl, { repo, env, prazoMs }) {
   const r = rodar(decl.sessao.cli, { cwd: repo, env, prazoMs });
   if (!r.ok) return { erro: r.encontrado, ausente: r.ausente };
@@ -121,8 +132,18 @@ function lerLista(decl, { repo, env, prazoMs }) {
   if (!Array.isArray(lista)) return { erro: `${decl.sessao.cli.join(" ")} não devolveu lista` };
   const nome = (e) => String(e?.name ?? e?.id ?? "").split("@")[0];
   const raizes = raizesDoProjeto(repo, { env, prazoMs });
-  return { entradas: lista.filter((e) => e && typeof e === "object" && nome(e) === NOME_DO_PLUGIN && doProjeto(e, raizes, repo)) };
+  const entradas = [];
+  const duvidosas = [];
+  for (const e of lista) {
+    if (!e || typeof e !== "object" || nome(e) !== NOME_DO_PLUGIN) continue;
+    const quem = doProjeto(e, raizes, repo);
+    if (quem.de === "deste") entradas.push(e);
+    else if (quem.de === "duvidosa") duvidosas.push({ entrada: e, motivo: quem.motivo });
+  }
+  return { entradas, duvidosas };
 }
+
+const motivosDe = (duvidosas) => [...new Set(duvidosas.map((d) => d.motivo))].join("; ");
 
 function pluginCarregado(decl, lista) {
   const C = "plugin-carregado";
@@ -132,6 +153,9 @@ function pluginCarregado(decl, lista) {
     return conferida(C, "falha", lista.erro, lista.ausente ? `instalar a CLI do host, ou corrigir sessao.cli na declaração (${comando})` : `rodar ${comando} na raiz do projeto e corrigir o que ela diz`);
   const ligadas = lista.entradas.filter((e) => e.enabled !== false);
   if (ligadas.length) return conferida(C, "ok", `${NOME_DO_PLUGIN} ligado (${ligadas.map((e) => e.scope ?? "?").join(", ")})`);
+  const duvidosasLigadas = lista.duvidosas.filter((d) => d.entrada.enabled !== false);
+  if (duvidosasLigadas.length)
+    return conferida(C, "falha", `${NOME_DO_PLUGIN} ligado só em instalação que não deu para provar deste projeto: ${motivosDe(duvidosasLigadas)}`, `corrigir o que impediu a prova (${motivosDe(duvidosasLigadas)}) e conferir com ${comando}`);
   if (lista.entradas.length)
     return conferida(C, "falha", `${NOME_DO_PLUGIN} instalado e desligado (${lista.entradas.map((e) => e.scope ?? "?").join(", ")})`, `ligar o plugin ${NOME_DO_PLUGIN} no projeto e conferir com ${comando}`);
   return conferida(C, "falha", `${NOME_DO_PLUGIN} fora da lista de ${comando}`, `instalar o plugin ${NOME_DO_PLUGIN} pelo marketplace, ligá-lo no projeto e conferir com ${comando}`);
@@ -174,8 +198,11 @@ function instalacaoUnica(decl, lista, settings) {
   if (!decl.sessao.settings.length) return naoDeclarado(C, "sessao.settings");
   if (settings.erro) return conferida(C, "falha", settings.erro, `corrigir o JSON de ${settings.rel}`);
   const problemas = [];
-  if (!lista.erro && lista.entradas.length > 1)
-    problemas.push(`${lista.entradas.length} instalações de ${NOME_DO_PLUGIN} (${lista.entradas.map((e) => e.scope ?? "?").join(", ")})`);
+  const todas = lista.erro ? [] : [...lista.entradas, ...lista.duvidosas.map((d) => d.entrada)];
+  if (todas.length > 1)
+    problemas.push(
+      `${todas.length} instalações de ${NOME_DO_PLUGIN} (${todas.map((e) => e.scope ?? "?").join(", ")})${lista.duvidosas.length ? ` — ${lista.duvidosas.length} sem prova de serem deste projeto: ${motivosDe(lista.duvidosas)}` : ""}`,
+    );
   const { comandos, scripts } = hooksDoPlugin();
   for (const { rel, json } of settings.lidos) {
     const doPlugin = comandosDeHook(json?.hooks).filter((c) => comandos.includes(c) || scripts.some((s) => (c.match(SCRIPT_RE) ?? []).includes(s)));
@@ -183,7 +210,9 @@ function instalacaoUnica(decl, lista, settings) {
   }
   if (problemas.length)
     return conferida(C, "falha", problemas.join("; "), `deixar uma instalação só do plugin e tirar dos settings do projeto os hooks que o plugin já registra`);
-  return conferida(C, "ok", lista.erro ? "settings sem hook do plugin (lista do host não lida)" : `${lista.entradas.length} instalação(ões) na lista, settings sem hook do plugin`);
+  if (lista.erro) return conferida(C, "ok", "settings sem hook do plugin (lista do host não lida)");
+  const duvida = lista.duvidosas.length ? ` (${lista.duvidosas.length} sem prova de ser deste projeto: ${motivosDe(lista.duvidosas)})` : "";
+  return conferida(C, "ok", `${lista.entradas.length + lista.duvidosas.length} instalação(ões) na lista${duvida}, settings sem hook do plugin`);
 }
 
 /** `systemctl --user show <unidade> -p Restart -p LoadState` → `Restart` ≠ `no`. */
