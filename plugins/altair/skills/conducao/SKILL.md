@@ -35,12 +35,13 @@ Neste texto, "maestra" é a sessão que roda o `proximo` da fase — a condutora
 
 ## 1. Pré-voo (uma vez por sessão; falhou ⇒ parar e dizer ao operador)
 
-1. **Modo sem clique.** O modo vem do `get_session` desta sessão (`session_context.permission_mode`) e vai como `--modo-maestra` em todo `abrir`: a filha nasce no modo de quem a cria, e o `create_session` recusa modo mais permissivo. Fora dos `modosSemClique` da declaração, a filha pararia a cada comando sem ninguém para clicar, e o `abrir` sai `perguntar modo-da-maestra` sem gravar nada (pedir ao operador que volte ao modo sem clique). Ler o modo antes de cada `abrir`: o operador pode trocá-lo no meio. O repositório do projeto vai anexado com `access: push` (página do projeto).
+1. **Modo sem clique.** O modo vem do `get_session` desta sessão (`session_context.permission_mode`) e vai como `--modo-maestra` em todo `abrir`: a filha nasce no modo de quem a cria. Fora dos `modosSemClique` da declaração ela pararia a cada comando, e o `abrir` sai `perguntar modo-da-maestra` sem gravar nada (pedir ao operador o modo sem clique). Ler o modo antes de cada `abrir`: o operador pode trocá-lo no meio. O repositório do projeto vai anexado com `access: push` (página do projeto).
 2. **Uma sessão por nível.** `list_sessions` (`mine: true`): outra condutora viva da mesma fase, ou outra maestra do mesmo ciclo ⇒ `archive_session` dela **antes** de retomar. Depois `conducao.mjs retomar` — o estado vem do git, nunca da conversa.
 3. **Limpeza das pastas de sessão de pé:** o serviço que a página do projeto nomeia saiu com sucesso há menos de 3 h; senão avisar o operador **antes** de abrir qualquer filha.
 4. **Workflows de push:** `conducao.mjs conferir-workflows --repo <worktree>` sai 0. Exit 1 ⇒ workflow com gatilho `push` fora do ramo principal lê `secrets.` — o push da filha rodaria código com segredo; parar e perguntar.
 5. Worktree do ciclo no servidor, ramo `ciclo-<id>`. **Push do ramo só da condutora**, dessa worktree — nunca de árvore de filha, onde ela nem roda git.
 6. **Onde a filha nasce:** `create_session` **sem** `environment_id` herda o ambiente da própria sessão — a mesma ponte, o mesmo usuário. Não há id de ambiente a ler nem a guardar.
+7. **Host:** `conducao.mjs pre-voo --repo <worktree> --ciclo <id>`; exit 1 ⇒ cada falha e remédio ao operador, sem filha. Tier só avisa.
 
 ## 2. O laço
 

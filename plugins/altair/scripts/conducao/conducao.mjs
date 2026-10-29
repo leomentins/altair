@@ -23,6 +23,14 @@
  *   auditar  --ciclo <id> --ref <ref> [--repo <repo>] [--exigir-fases F1,F2] [--exigir-encerramentos F1,ciclo]
  *      exit 1 com violação, fase pedida sem condução ou encerramento pedido ausente (T22)
  *
+ * Pré-voo (T30, D-VEGA29-15) — `--ciclo` opcional:
+ *   pre-voo --repo <projeto> [--ciclo <id>]
+ *      confere plugin carregado, instalação única, ponte com Restart e tráfego não essencial pelo
+ *      contrato do host que a declaração dá (v5); falha ⇒ `perguntar pre-voo` com `falhas`
+ *      ({ conferencia, encontrado, remedio }), exit 1, e nenhuma filha abre. Com `--ciclo`, avisa
+ *      (sem parar) a tarefa de julgamento em tier `mecanico`. O `abrir` não o roda: quem conduz roda
+ *      no começo da sessão
+ *
  * CI da proposta (T14) — sem --ciclo:
  *   ci --push-em <iso> --runs <arquivo|json> --pr <arquivo|json> [--sha <sha>] [--agora <iso>] [--prazo-min <n>]
  *      esperar · avisar (sem-run | proposta-desalinhada) · ler-run; sempre exit 0
@@ -139,6 +147,7 @@ import { BOTOES } from "./botoes.mjs";
 import * as gitConducao from "./git-conducao.mjs";
 import * as logEventos from "./log-eventos.mjs";
 import * as pergunta from "./pergunta.mjs";
+import { preVoo } from "./pre-voo.mjs";
 import { ErroGitPrazo, tentarGit } from "./git-exec.mjs";
 import { RE, lerMarcas } from "./marcas.mjs";
 import {
@@ -1797,6 +1806,12 @@ export function main(argv) {
       process.stdout.write(`${JSON.stringify(saida)}\n`);
       return saida.valido ? 0 : 1;
     }
+    if (verbo === "pre-voo") {
+      const saida = preVoo({ repo, ciclo: ciclo ?? null });
+      if (ciclo && saida.acao === "perguntar") logar(saida, "intencao", undefined, adaptador.lerAdaptador(repo));
+      process.stdout.write(`${JSON.stringify(saida)}\n`);
+      return saida.acao === "perguntar" ? 1 : 0;
+    }
     if (!ciclo) return sair(2, "--ciclo é obrigatório");
     const decl = adaptador.lerAdaptador(repo);
     if (verbo === "registrar-evento") {
@@ -1839,7 +1854,7 @@ export function main(argv) {
         return 1;
       }
     } else
-      return sair(2, `verbo desconhecido: ${verbo ?? "(nenhum)"} — proximo | conferir | retomar | auditar | registrar-evento | ${[...VERBOS_GIT].join(" | ")}`);
+      return sair(2, `verbo desconhecido: ${verbo ?? "(nenhum)"} — proximo | conferir | retomar | auditar | pre-voo | registrar-evento | ${[...VERBOS_GIT].join(" | ")}`);
     process.stdout.write(`${JSON.stringify(saida)}\n`);
     return 0;
   } catch (e) {
