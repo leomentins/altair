@@ -178,6 +178,34 @@ describe("pré-voo: uma falha por conferência", () => {
     falhouSo(p, preVoo(p), "instalacao-unica", /2 instalações de altair \(project, user\)/);
   });
 
+  test("instalação de OUTRO projeto na lista do host não conta como dupla (nem desligada, nem ligada)", () => {
+    for (const enabled of [false, true]) {
+      const outro = { id: "altair@marketplace-de-teste", scope: "project", enabled, projectPath: tmp("pre-voo-outro-") };
+      const p = projeto({ lista: [outro, ...LISTA_VERDE] });
+      const r = preVoo(p);
+      assert.equal(r.status, 0, JSON.stringify(r.saida));
+      assert.equal(r.saida.conferencias.find((c) => c.conferencia === "instalacao-unica").estado, "ok");
+    }
+  });
+
+  test("instalação só de outro projeto não carrega o plugin aqui", () => {
+    const p = projeto({ lista: [{ id: "altair@marketplace-de-teste", scope: "project", enabled: true, projectPath: tmp("pre-voo-outro-") }] });
+    falhouSo(p, preVoo(p), "plugin-carregado", /altair fora da lista/);
+  });
+
+  test("contraprova: instalação de projeto com projectPath deste projeto conta, inclusive vista de uma worktree", () => {
+    const p = projeto();
+    const deste = { id: "altair@outro-marketplace", scope: "project", enabled: true, projectPath: p.repo };
+    writeFileSync(path.join(p.bin, "lista.json"), JSON.stringify([...LISTA_VERDE, deste]));
+    falhouSo(p, preVoo(p), "instalacao-unica", /2 instalações de altair/);
+    const wt = path.join(tmp("pre-voo-wt-"), "arvore");
+    p.g("worktree", "add", "-q", "-b", "outra", wt);
+    const r = preVoo({ ...p, repo: wt });
+    assert.equal(r.status, 1, r.stderr);
+    assert.deepEqual(r.saida.falhas.map((f) => f.conferencia), ["instalacao-unica"]);
+    assert.match(r.saida.falhas[0].encontrado, /2 instalações de altair/);
+  });
+
   test("instalação dupla pelo settings do projeto, que registra um hook do plugin à mão: pergunta", () => {
     const [rel] = DECLARACAO.sessao.settings;
     const settings = { [rel]: { hooks: { PreToolUse: [{ matcher: "", hooks: [{ type: "command", command: "node /x/plugins/altair/hooks/conducao-nonce-guard.js" }] }] } } };

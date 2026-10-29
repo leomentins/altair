@@ -6,7 +6,10 @@
  *   plugin-carregado   a CLI do host (`sessao.cli`, argv sem shell, na raiz do projeto)
  *                      lista o plugin da condução ligado
  *   instalacao-unica   o plugin aparece uma vez só na lista, e nenhum `settings` do
- *                      projeto (`sessao.settings`) registra um hook do plugin à mão
+ *                      projeto (`sessao.settings`) registra um hook do plugin à mão;
+ *                      entrada de escopo de projeto com `projectPath` de OUTRO projeto
+ *                      não conta (nem aqui nem em `plugin-carregado`): a lista do host
+ *                      é da máquina, e a instalação de um vizinho não é deste projeto
  *   ponte-com-restart  `systemctl --user show <sessao.ponte.unidade>` dá `Restart` ≠ `no`;
  *                      sem a unidade declarada sai `nao-declarada`, como aviso
  *   trafego-ligado     a variável que desliga o tráfego não essencial
@@ -29,7 +32,7 @@
  * prazo; comando ausente vira falha com remédio, nunca exceção crua.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 import * as adaptador from "./adaptador.mjs";
 import { ErroPlano, lerPlanoNoCommit } from "./ler-plano.mjs";
@@ -60,7 +63,44 @@ const conferida = (conferencia, estado, encontrado, remedio = null) => ({ confer
 const naoDeclarado = (conferencia, campo) =>
   conferida(conferencia, "falha", `${campo} não declarado`, `declarar ${campo} (versão 5 do esquema) em .altair/adaptador.json`);
 
-/** A lista de plugins do host: `{ entradas }` (as do plugin da condução) ou `{ erro }`. */
+/**
+ * As raízes que contam como "este projeto" para o `projectPath` da lista: a árvore
+ * conduzida e, quando ela é worktree, a árvore principal do mesmo repositório (o
+ * host grava a instalação de projeto contra a principal).
+ */
+export function raizesDoProjeto(repo, { env, prazoMs } = {}) {
+  const raizes = new Set([path.resolve(repo)]);
+  try {
+    raizes.add(realpathSync(repo));
+  } catch {
+    /* repo ilegível: a leitura da declaração já teria parado antes */
+  }
+  const r = rodar(["git", "-C", repo, "rev-parse", "--path-format=absolute", "--git-common-dir"], { env, prazoMs });
+  if (r.ok && r.stdout.trim()) {
+    const principal = path.dirname(r.stdout.trim());
+    raizes.add(principal);
+    try {
+      raizes.add(realpathSync(principal));
+    } catch {
+      /* sem a principal no disco: fica só a árvore conduzida */
+    }
+  }
+  return raizes;
+}
+
+/** A entrada é deste projeto: sem `projectPath` (user, local, pasta de skills) ou com ele numa das raízes. */
+export function doProjeto(entrada, raizes) {
+  const p = entrada?.projectPath;
+  if (typeof p !== "string" || !p) return true;
+  if (raizes.has(path.resolve(p))) return true;
+  try {
+    return raizes.has(realpathSync(p));
+  } catch {
+    return false;
+  }
+}
+
+/** A lista de plugins do host: `{ entradas }` (as do plugin da condução, deste projeto) ou `{ erro }`. */
 function lerLista(decl, { repo, env, prazoMs }) {
   const r = rodar(decl.sessao.cli, { cwd: repo, env, prazoMs });
   if (!r.ok) return { erro: r.encontrado, ausente: r.ausente };
@@ -72,7 +112,8 @@ function lerLista(decl, { repo, env, prazoMs }) {
   }
   if (!Array.isArray(lista)) return { erro: `${decl.sessao.cli.join(" ")} não devolveu lista` };
   const nome = (e) => String(e?.name ?? e?.id ?? "").split("@")[0];
-  return { entradas: lista.filter((e) => e && typeof e === "object" && nome(e) === NOME_DO_PLUGIN) };
+  const raizes = raizesDoProjeto(repo, { env, prazoMs });
+  return { entradas: lista.filter((e) => e && typeof e === "object" && nome(e) === NOME_DO_PLUGIN && doProjeto(e, raizes)) };
 }
 
 function pluginCarregado(decl, lista) {
