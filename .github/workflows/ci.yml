@@ -1,0 +1,64 @@
+name: ci
+
+# Toda proposta e todo push na main: o plugin se valida, a suíte roda, e a árvore inteira
+# passa pela varredura de segredo (gitleaks pinado) e pela de nome de projeto e caminho
+# pessoal. Só runner hospedado: repositório público com runner próprio deixaria qualquer
+# proposta rodar código na máquina dele.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  plugin:
+    name: plugin e suíte
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: claude plugin validate
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.311
+          claude plugin validate plugins/altair
+      - name: suíte do plugin
+        run: |
+          git config --global user.name ci
+          git config --global user.email ci@example.invalid
+          git config --global init.defaultBranch main
+          node --test $(find plugins/altair -name '*.test.mjs' | sort)
+
+  varredura:
+    name: segredo e nome de projeto
+    runs-on: ubuntu-latest
+    env:
+      # Versão e hash do tarball linux_x64 PINADOS aqui: o checksums.txt do release vem da mesma
+      # URL do binário, e quem troca um troca o outro. Bump exige trocar os dois.
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: instalar gitleaks pinado
+        run: |
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --max-time 60 -sSfL -O "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}"
+          echo "${GITLEAKS_SHA256}  ${tarball}" | sha256sum -c -
+          tar -xzf "$tarball" gitleaks
+          ./gitleaks version
+      - name: gitleaks no histórico inteiro
+        run: ./gitleaks detect --source . --no-banner --redact
+      - name: nome de projeto e caminho pessoal
+        run: |
+          if git grep -nIiE 'sistoli|/home/|atrium|labs_' -- . ':!.github/workflows/ci.yml'; then
+            echo "::error::a árvore cita nome de projeto ou caminho pessoal (linhas acima)"
+            exit 1
+          fi
+          echo "varredura limpa"
