@@ -1,7 +1,7 @@
 {
   "name": "altair",
   "description": "Condução de ciclo por sessão: uma maestra, uma condutora por fase e uma operária por tarefa, com cada ação emitida por script com nonce, conferência por comando e os guards de nonce, alcance e fim da operária.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "altair maintainers"
   }
