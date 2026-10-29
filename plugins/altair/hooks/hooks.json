@@ -1,0 +1,39 @@
+{
+  "description": "Guards da condução: o nonce da maestra, o alcance da operária e o fim da operária.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__claude-code-remote__(archive_session|send_message)|^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/operaria-alcance-guard.js\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__claude-code-remote__(create_session|send_message|archive_session)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/conducao-nonce-guard.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/operaria-stop-guard.js\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
