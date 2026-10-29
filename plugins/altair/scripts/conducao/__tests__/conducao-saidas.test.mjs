@@ -241,7 +241,7 @@ test("exit 2: --ciclo na posicao do verbo e lido como verbo e cobra --ciclo", ()
 test("exit 2: verbo desconhecido lista os verbos", () => {
   const r = cli(["nao-existe", "--ciclo", CICLO]);
   assert.equal(r.status, 2);
-  assert.match(r.erro, /^conducao: verbo desconhecido: nao-existe — proximo \| conferir \| retomar \| auditar \| registrar-evento \| autorizar-fase/);
+  assert.match(r.erro, /^conducao: verbo desconhecido: nao-existe — proximo \| conferir \| retomar \| auditar \| pre-voo \| registrar-evento \| autorizar-fase/);
 });
 
 test("exit 2: flag obrigatoria ausente em cada verbo sem ciclo", () => {

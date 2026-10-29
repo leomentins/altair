@@ -44,6 +44,13 @@ repositório do plugin). O mínimo, com o plano no formato público:
   ambiente; default nenhuma).
 - `guardas.pastaDoModo` — onde os dois guards com modo leem `<guard>-mode`. Sem o campo, ou sem o
   arquivo, eles rodam em `shadow`.
+- `sessao` (versão 5) — o contrato do host que `conducao.mjs pre-voo` confere: `cli` (argv que
+  lista os plugins em JSON), `settings` (os arquivos de configuração do projeto),
+  `variavelDoTrafego` (a que desliga o tráfego não essencial), `ponte.unidade` (a unidade de
+  usuário da ponte) e `instrucoes` (globs dos arquivos de instrução do host). Sem eles o
+  `pre-voo` diz o campo que falta; `exemplo/.altair/adaptador.json` traz os valores de um host.
+- `tiers` (versão 5) — o modelo de cada tier do plano (`mecanico` · `parecer` · `critico` ·
+  `inherit`), texto opaco que o `pre-voo` repete quando avisa tarefa de julgamento em `mecanico`.
 
 ## O que cada hook faz
 

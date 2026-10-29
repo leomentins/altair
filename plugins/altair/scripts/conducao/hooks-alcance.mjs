@@ -61,7 +61,7 @@ function ehArquivo(repo, rel) {
  * Linhas que executam algo: sem comentário de linha inteira; de `echo`
  * (texto mostrado ao humano, nunca executado) sobra só o que vem depois do
  * primeiro `|` — `echo "$x" | xargs npx prettier` executa o prettier. Variáveis atribuídas com
- * valor literal (`guard=.claude/hooks/x.js`) são expandidas onde aparecem.
+ * valor literal (`guard=.host/hooks/x.js`) são expandidas onde aparecem.
  */
 export function linhasExecutadas(texto) {
   const vars = new Map();

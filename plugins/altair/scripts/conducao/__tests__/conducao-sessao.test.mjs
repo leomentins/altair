@@ -282,7 +282,7 @@ test("ultima fase fechada com CI verde no HEAD emite fechar-ciclo com o texto da
   assert.match(f.texto, /archive_session da maestra anterior session_maestra_f2/);
   assert.ok(f.texto.includes(`auditar --repo ${a.dir} --ciclo ${CICLO} --ref HEAD --exigir-fases F1,F2 --exigir-encerramentos F1,ciclo`), f.texto);
   assert.ok(f.texto.includes(`limpar --repo ${a.dir} --ciclo ${CICLO}`), f.texto);
-  assert.match(f.texto, /\.claude\/skills\/close-cycle\/SKILL\.md/);
+  assert.match(f.texto, /ler o \/close-cycle do projeto/);
 
   // A maestra grava o encerramento do ciclo e para; daí em diante, nada a emitir.
   const r = a.cli("encerrar-sessao", "--fase", "ciclo", "--nonce", f.nonce);

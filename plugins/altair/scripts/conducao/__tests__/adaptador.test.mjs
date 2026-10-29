@@ -264,11 +264,14 @@ describe("codigo: arquivo em .altair/, nome embutido ou ausente (D-VEGA29-34)", 
 // A marca que a Verificação embrulhada liga e as variáveis de produção que ela tira, e a pasta
 // do `<guard>-mode`, são campos da declaração (eram literais do projeto de origem no núcleo).
 describe("versão 4: verificacao e guardas", () => {
-  const { verificacao, guardas, ...v3 } = DECLARACAO;
+  // A declaração do projeto de teste é v5: a v3 que se monta dela tira também os campos da v5.
+  const { verificacao, guardas, tiers, sessao, ...resto } = DECLARACAO;
+  void tiers;
+  const v3 = { ...resto, sessao: { modosSemClique: sessao.modosSemClique } };
 
   test("a declaração do projeto de teste traz os dois campos, e eles chegam lidos", () => {
     const lida = validar(DECLARACAO);
-    assert.equal(lida.versao, 4);
+    assert.equal(lida.versao, 5);
     assert.deepEqual(lida.verificacao, { marcaSemCofre: verificacao.marcaSemCofre, variaveisDeProducao: verificacao.variaveisDeProducao });
     assert.deepEqual(lida.guardas, { pastaDoModo: guardas.pastaDoModo });
   });

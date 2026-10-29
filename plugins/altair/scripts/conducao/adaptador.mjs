@@ -6,7 +6,7 @@
  * versionado `adaptador.schema.json` (T20); este leitor é a mesma regra sem
  * dependência npm (o núcleo não carrega `ajv`):
  *
- *   versao      1 | 2 | 3               — OPCIONAL, default 1: a versão do esquema. A v1 é a
+ *   versao      1 | 2 | 3 | 4 | 5       — OPCIONAL, default 1: a versão do esquema. A v1 é a
  *                                         declaração da F2, só de dados, e segue aceita como está;
  *                                         campo novo entra com versão nova, e a anterior segue valendo
  *   codigo      "<arquivo>.mjs" | "<nome>" — a partir da v2, OPCIONAL: o código do adaptador, para o projeto
@@ -34,23 +34,34 @@
  *                                         proposta. `false` ⇒ a fase e o ciclo fecham pela Verificação
  *                                         verde da última tarefa (a do fechamento, conferida), sem
  *                                         esperar veredito de CI
- *   sessao      { modosSemClique }      — OPCIONAL (T15, D-VEGA29-29): modos de permissão da sessão
+ *   sessao      { modosSemClique, … }   — OPCIONAL (T15, D-VEGA29-29): modos de permissão da sessão
  *                                         que cria a filha que contam como sem clique (default
  *                                         `["auto"]`); fora da lista o `abrir` pergunta `modo-da-maestra`.
- *                                         O modo da ponte não entra: a filha herda o da criadora
+ *                                         O modo da ponte não entra: a filha herda o da criadora.
+ *                                         Só na v5, OPCIONAIS, o contrato do host que o `pre-voo` confere
+ *                                         (T30, D-VEGA29-15) — o núcleo não nomeia host nenhum:
+ *                                           cli               argv que lista os plugins do host em JSON
+ *                                           settings          arquivos de configuração do projeto no host
+ *                                           variavelDoTrafego a variável que desliga o tráfego não essencial
+ *                                           ponte { unidade } a unidade de usuário da ponte (systemd)
+ *                                           instrucoes        globs dos arquivos de instrução do host, que
+ *                                                             somam às `superficiesDeInstrucao` do núcleo
  *   publicacao  { frasesLegadas }       — OPCIONAL (T16, AC-VEGA29-10): prefixos de linha do corpo da
  *                                         conferência que, nos commits gravados antes do trailer
  *                                         `Conducao-Publicacao-Dispensada`, valiam como dispensa de
  *                                         publicação (default `[]`). O núcleo casa só o trailer; a
  *                                         frase antiga, com o nome de quem dispensou, é dado do projeto
- *   verificacao { marcaSemCofre, variaveisDeProducao } — só na v4, OPCIONAL: a variável que a
+ *   verificacao { marcaSemCofre, variaveisDeProducao } — a partir da v4, OPCIONAL: a variável que a
  *                                         Verificação embrulhada liga (`<marca>=1`; default
  *                                         `ALTAIR_SEM_COFRE_PRODUCAO`), que o guard de cofre do projeto
  *                                         lê, e as variáveis de produção que o embrulho tira do
  *                                         ambiente (`env -u`; default nenhuma)
- *   guardas     { pastaDoModo }         — só na v4, OPCIONAL: pasta, relativa à raiz do repositório,
+ *   guardas     { pastaDoModo }         — a partir da v4, OPCIONAL: pasta, relativa à raiz do repositório,
  *                                         onde os guards com modo leem `<guard>-mode`; sem o campo, ou
  *                                         sem o arquivo, o guard roda em `shadow`
+ *   tiers       { <tier>: "<modelo>" }  — só na v5, OPCIONAL (T30, D-VEGA29-15): o modelo de cada tier
+ *                                         abstrato (`mecanico` · `parecer` · `critico` · `inherit`), texto
+ *                                         opaco que o núcleo só repete no aviso do `pre-voo`
  *
  * Campo desconhecido, em qualquer nível, é recusado: declaração que o leitor
  * não entende não é lida pela metade. Todo caminho que a declaração aponta
@@ -135,8 +146,10 @@ export function caminhoDoEmbutido(nome) {
 
 const CAMPOS = Object.freeze({
   raiz: ["projeto", "operadores", "estado", "log", "pergunta"],
-  opcionais: ["versao", "codigo", "pagina", "conferencia", "ci", "sessao", "publicacao", "verificacao", "guardas"],
+  opcionais: ["versao", "codigo", "pagina", "conferencia", "ci", "sessao", "publicacao", "verificacao", "guardas", "tiers"],
   sessao: ["modosSemClique"],
+  sessaoV5: ["cli", "settings", "variavelDoTrafego", "ponte", "instrucoes"],
+  ponte: ["unidade"],
   verificacao: ["marcaSemCofre", "variaveisDeProducao"],
   guardas: ["pastaDoModo"],
   publicacao: ["frasesLegadas"],
@@ -150,7 +163,7 @@ const CAMPOS = Object.freeze({
 const TOKEN = /^[A-Za-z0-9._-]{1,64}$/;
 
 /** Versões do esquema que este leitor aceita; a anterior segue valendo (T20). */
-export const VERSOES = Object.freeze([1, 2, 3, 4]);
+export const VERSOES = Object.freeze([1, 2, 3, 4, 5]);
 
 function objeto(v, onde) {
   if (!v || typeof v !== "object" || Array.isArray(v)) throw new ErroAdaptador(`${onde}: esperado objeto`);
@@ -270,10 +283,11 @@ export function validar(bruto) {
   if (p.destino === "pasta") relativo(p.pasta, "pergunta.pasta");
   const conferencia = validarConferencia(d.conferencia);
   if (d.ci !== undefined && typeof d.ci !== "boolean") throw new ErroAdaptador("ci: esperado true ou false");
-  const sessao = validarSessao(d.sessao);
+  const sessao = validarSessao(d.sessao, versao);
   const publicacao = validarPublicacao(d.publicacao);
   const verificacao = validarVerificacao(d.verificacao, versao);
   const guardas = validarGuardas(d.guardas, versao);
+  const tiers = validarTiers(d.tiers, versao);
   return Object.freeze({
     versao,
     ...(d.codigo === undefined ? {} : { codigo: d.codigo }),
@@ -289,6 +303,7 @@ export function validar(bruto) {
     publicacao,
     verificacao,
     guardas,
+    tiers,
   });
 }
 
@@ -320,7 +335,7 @@ const VARIAVEL = /^[A-Za-z_][A-Za-z0-9_]{0,127}$/;
  */
 function validarVerificacao(v, versao) {
   if (v === undefined) return Object.freeze({ marcaSemCofre: MARCA_SEM_COFRE_PADRAO, variaveisDeProducao: Object.freeze([]) });
-  if (versao < 4) throw new ErroAdaptador("verificacao: só na versao 4 do esquema");
+  if (versao < 4) throw new ErroAdaptador("verificacao: só na versao 4 do esquema ou posterior");
   objeto(v, "verificacao");
   soCampos(v, [], "verificacao", CAMPOS.verificacao);
   const marca = v.marcaSemCofre ?? MARCA_SEM_COFRE_PADRAO;
@@ -334,7 +349,7 @@ function validarVerificacao(v, versao) {
 /** `guardas` (v4): a pasta do `<guard>-mode`, relativa à raiz do repositório; ausente ⇒ `null`. */
 function validarGuardas(g, versao) {
   if (g === undefined) return Object.freeze({ pastaDoModo: null });
-  if (versao < 4) throw new ErroAdaptador("guardas: só na versao 4 do esquema");
+  if (versao < 4) throw new ErroAdaptador("guardas: só na versao 4 do esquema ou posterior");
   objeto(g, "guardas");
   soCampos(g, CAMPOS.guardas, "guardas");
   relativo(g.pastaDoModo, "guardas.pastaDoModo");
@@ -356,18 +371,74 @@ export function dispensouPublicacao(declaracao, { trailers = {}, corpo = "" } = 
 const MODO = /^[A-Za-z][A-Za-z_]{1,47}$/;
 export const MODOS_SEM_CLIQUE_PADRAO = Object.freeze(["auto"]);
 
+/** Os tiers abstratos do plano (D-VEGA29-15); `inherit` é o default: a filha herda o modelo de quem a cria. */
+export const TIERS = Object.freeze(["mecanico", "parecer", "critico", "inherit"]);
+export const TIER_PADRAO = "inherit";
+const UNIDADE = /^[A-Za-z0-9@._:-]{1,255}$/;
+
 /**
- * `sessao.modosSemClique` (T15, D-VEGA29-29): ausente ⇒ `["auto"]`. Lista vazia
- * recusa — nenhuma filha abriria; o modo vem como o `get_session` o escreve.
+ * `sessao` (T15, D-VEGA29-29): `modosSemClique` ausente ⇒ `["auto"]`. Lista
+ * vazia recusa — nenhuma filha abriria; o modo vem como o `get_session` o
+ * escreve. Na v5, o contrato do host que o `pre-voo` confere (T30): ausente
+ * ⇒ `null` (ou lista vazia), e a conferência que dependia dele sai
+ * `nao-declarada`; o núcleo não supõe host nenhum.
  */
-function validarSessao(s) {
-  if (s === undefined) return Object.freeze({ modosSemClique: MODOS_SEM_CLIQUE_PADRAO });
+function validarSessao(s, versao = 1) {
+  const vazia = { cli: null, settings: Object.freeze([]), variavelDoTrafego: null, ponte: null, instrucoes: Object.freeze([]) };
+  if (s === undefined) return Object.freeze({ modosSemClique: MODOS_SEM_CLIQUE_PADRAO, ...vazia });
   objeto(s, "sessao");
-  soCampos(s, CAMPOS.sessao, "sessao");
+  soCampos(s, CAMPOS.sessao, "sessao", CAMPOS.sessaoV5);
   const m = s.modosSemClique;
   if (!Array.isArray(m) || !m.length || !m.every((x) => typeof x === "string" && MODO.test(x)))
     throw new ErroAdaptador("sessao.modosSemClique: esperada lista não vazia de modos de permissão");
-  return Object.freeze({ modosSemClique: Object.freeze([...new Set(m)]) });
+  const novos = CAMPOS.sessaoV5.filter((k) => k in s);
+  if (novos.length && versao < 5) throw new ErroAdaptador(`sessao.${novos[0]}: só na versao 5 do esquema`);
+  const textoDeLinha = (x) => typeof x === "string" && x.trim() && !/[\r\n\0]/.test(x);
+  let cli = null;
+  if (s.cli !== undefined) {
+    if (!Array.isArray(s.cli) || !s.cli.length || !s.cli.every(textoDeLinha))
+      throw new ErroAdaptador("sessao.cli: esperado argv não vazio (lista de textos de uma linha)");
+    cli = Object.freeze([...s.cli]);
+  }
+  let settings = vazia.settings;
+  if (s.settings !== undefined) {
+    if (!Array.isArray(s.settings) || !s.settings.length) throw new ErroAdaptador("sessao.settings: esperada lista não vazia de caminhos relativos");
+    settings = Object.freeze(s.settings.map((x, i) => relativo(x, `sessao.settings[${i}]`)));
+  }
+  let variavelDoTrafego = null;
+  if (s.variavelDoTrafego !== undefined) {
+    if (typeof s.variavelDoTrafego !== "string" || !VARIAVEL.test(s.variavelDoTrafego))
+      throw new ErroAdaptador("sessao.variavelDoTrafego: esperado nome de variável de ambiente");
+    variavelDoTrafego = s.variavelDoTrafego;
+  }
+  let ponte = null;
+  if (s.ponte !== undefined) {
+    objeto(s.ponte, "sessao.ponte");
+    soCampos(s.ponte, CAMPOS.ponte, "sessao.ponte");
+    if (typeof s.ponte.unidade !== "string" || !UNIDADE.test(s.ponte.unidade) || s.ponte.unidade.startsWith("-"))
+      throw new ErroAdaptador("sessao.ponte.unidade: esperado nome de unidade");
+    ponte = Object.freeze({ unidade: s.ponte.unidade });
+  }
+  let instrucoes = vazia.instrucoes;
+  if (s.instrucoes !== undefined) {
+    if (!Array.isArray(s.instrucoes) || !s.instrucoes.every(textoDeLinha)) throw new ErroAdaptador("sessao.instrucoes: esperada lista de globs");
+    instrucoes = Object.freeze([...new Set(s.instrucoes.map((x, i) => relativo(x, `sessao.instrucoes[${i}]`)))]);
+  }
+  return Object.freeze({ modosSemClique: Object.freeze([...new Set(m)]), cli, settings, variavelDoTrafego, ponte, instrucoes });
+}
+
+/**
+ * `tiers` (v5, T30): tier abstrato → modelo, texto opaco de uma linha. Ausente
+ * ⇒ mapa vazio; o núcleo nunca escolhe modelo, só repete o declarado no aviso.
+ */
+function validarTiers(t, versao) {
+  if (t === undefined) return Object.freeze({});
+  if (versao < 5) throw new ErroAdaptador("tiers: só na versao 5 do esquema");
+  objeto(t, "tiers");
+  soCampos(t, [], "tiers", TIERS);
+  for (const [k, v] of Object.entries(t))
+    if (typeof v !== "string" || !v.trim() || /[\r\n]/.test(v)) throw new ErroAdaptador(`tiers.${k}: esperado texto de uma linha`);
+  return Object.freeze({ ...t });
 }
 
 /**

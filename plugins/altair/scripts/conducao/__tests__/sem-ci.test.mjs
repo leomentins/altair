@@ -208,7 +208,10 @@ test("declaracao do projeto de teste: ci true e so auto como modo sem clique", (
 test("declaracao recusa ci fora de booleano e lista de modos vazia ou com campo a mais", () => {
   assert.throws(() => validar({ ...DECLARACAO, ci: "nao" }), /ci: esperado true ou false/);
   assert.throws(() => validar({ ...DECLARACAO, sessao: { modosSemClique: [] } }), /sessao.modosSemClique/);
-  assert.throws(() => validar({ ...DECLARACAO, sessao: { modosSemClique: ["auto"], ponte: "bypassPermissions" } }), /campo desconhecido ponte/);
+  // A ponte não tem modo: na v5 ela só declara a unidade, e modo nela é campo desconhecido.
+  assert.throws(() => validar({ ...DECLARACAO, sessao: { modosSemClique: ["auto"], ponte: "bypassPermissions" } }), /sessao\.ponte: esperado objeto/);
+  assert.throws(() => validar({ ...DECLARACAO, sessao: { modosSemClique: ["auto"], ponte: { modo: "bypassPermissions" } } }), /campo desconhecido modo/);
+  assert.throws(() => validar({ ...DECLARACAO, versao: 4, tiers: undefined, sessao: { modosSemClique: ["auto"], ponte: { unidade: "x.service" } } }), /sessao\.ponte: só na versao 5/);
 });
 
 test("com a declaracao do projeto de teste, criadora em bypassPermissions pergunta modo-da-maestra e nada e gravado", (t) => {

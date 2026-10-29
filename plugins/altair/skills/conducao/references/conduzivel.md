@@ -25,8 +25,9 @@ O núcleo decide abrir sessão, trazer, publicar e perguntar pelo que o plano **
 | `Independente` | `sim` | a tarefa não depende da anterior (§Dependência de dado e dependência de ordem) |
 | `Prazo` | `<n> min` | o prazo da sessão filha; ausente ⇒ o padrão do núcleo |
 | `Verificação pós-merge` | `sim` | a Verificação só fica verde depois do merge do ramo |
+| `Tier` | `mecanico` · `parecer` · `critico` · `inherit` | o tier da tarefa, acima do da fase; ausente ⇒ o da fase, e sem ele `inherit`. O adaptador mapeia tier → modelo; o pré-voo avisa a tarefa de julgamento (fechamento, gate, conferência do operador, sensível) em `mecanico` |
 
-No topo do plano: `Fase` (`F<n>`, default `F1`), `Modelo` e `Largura do ciclo` (quantas tarefas correm ao mesmo tempo; ausente ⇒ o padrão do núcleo).
+No topo do plano: `Fase` (`F<n>`, default `F1`), `Modelo`, `Tier` (o da fase) e `Largura do ciclo` (quantas tarefas correm ao mesmo tempo; ausente ⇒ o padrão do núcleo).
 
 ## Outputs: o arquivo, não o assunto
 

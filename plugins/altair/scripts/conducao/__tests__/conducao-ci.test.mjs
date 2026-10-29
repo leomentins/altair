@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BOTOES } from "../botoes.mjs";
-import { decidirCi, gatilhoPush } from "../conducao.mjs";
+import { decidirCi, gatilhoDePush } from "../conducao.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPT = path.resolve(AQUI, "..", "conducao.mjs");
@@ -45,7 +45,7 @@ test("sem run depois do prazo do push emite aviso com o estado de mesclagem da p
   assert.deepEqual(r.saida.mesclagem, { proposta: 502, state: "OPEN", mergeable: "CONFLICTING", mergeStateStatus: "DIRTY", headRefOid: SHA });
   assert.match(r.saida.aviso, /CONFLICTING/);
   assert.match(r.saida.aviso, /não gera run/);
-  assert.equal(r.saida.minutosDesdeOPush, BOTOES.prazoRunCiMin + 1);
+  assert.equal(r.saida.minutosDesdePush, BOTOES.prazoRunCiMin + 1);
 });
 
 test("sem run de proposta mesclavel tambem avisa, com o estado lido", () => {
@@ -136,13 +136,13 @@ test("conferir-workflows sai 0 com push so em main, push fora de main sem secret
 });
 
 test("gatilho push inline, com tags ou branches-ignore conta como fora de main", () => {
-  assert.equal(gatilhoPush("on: push\n").soMain, false);
-  assert.equal(gatilhoPush("on: [pull_request, push]\n").soMain, false);
-  assert.equal(gatilhoPush("on: [pull_request]\n"), null);
-  assert.equal(gatilhoPush("on:\n  push:\n    branches: [main]\n    tags: ['v*']\n").soMain, false);
-  assert.equal(gatilhoPush("on:\n  push:\n    branches-ignore: [main]\n").soMain, false);
-  assert.equal(gatilhoPush("on:\n  push:\n").soMain, false);
-  assert.equal(gatilhoPush("on:\n  push:\n    branches: [main]\n    paths: ['x/**']\n").soMain, true);
+  assert.equal(gatilhoDePush("on: push\n").soMain, false);
+  assert.equal(gatilhoDePush("on: [pull_request, push]\n").soMain, false);
+  assert.equal(gatilhoDePush("on: [pull_request]\n"), null);
+  assert.equal(gatilhoDePush("on:\n  push:\n    branches: [main]\n    tags: ['v*']\n").soMain, false);
+  assert.equal(gatilhoDePush("on:\n  push:\n    branches-ignore: [main]\n").soMain, false);
+  assert.equal(gatilhoDePush("on:\n  push:\n").soMain, false);
+  assert.equal(gatilhoDePush("on:\n  push:\n    branches: [main]\n    paths: ['x/**']\n").soMain, true);
 });
 
 test("conferir-workflows sai 0 sobre os workflows do repositorio", () => {

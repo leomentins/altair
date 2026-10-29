@@ -11,7 +11,7 @@
  * tasks, declarações da T5); daqui para baixo a regra é do núcleo, e o que o
  * plano não declara cai na leitura conservadora.
  */
-import { codigoDoAdaptador, codigoDoNucleo } from "./adaptador.mjs";
+import { TIERS, TIER_PADRAO, codigoDoAdaptador, codigoDoNucleo } from "./adaptador.mjs";
 import { git as gitExec } from "./git-exec.mjs";
 import { BOTOES } from "./botoes.mjs";
 
@@ -77,6 +77,17 @@ export function comandoDaVerificacao(valor) {
   return trechos.length === 1 ? trechos[0][1] : null;
 }
 
+/**
+ * Tier declarado (T30, D-VEGA29-15): o valor de `**Tier:**`, sem crase nem
+ * caixa; ausente ⇒ `null`. Fora de `TIERS` vai a `invalidas`, como toda
+ * declaração fora do vocabulário — nunca vira o default calado.
+ */
+function tierDeclarado(valor) {
+  if (valor === undefined || valor === null) return null;
+  const v = String(valor).replaceAll("`", "").trim().toLowerCase();
+  return v || null;
+}
+
 /** Glob dos botões → RegExp: `**` qualquer profundidade, `*` um segmento. */
 export function globParaRegex(glob) {
   let re = "";
@@ -121,6 +132,14 @@ function classificar(t) {
  */
 export function lerPlano(texto, codigo = codigoDoNucleo()) {
   const { ciclo, fases: phases, tasks, declaracoes: decl } = codigo.plano.ler(texto);
+  // Tier (T30): da tarefa (`**Tier:**`), senão da fase (o heading, lido pelo adaptador como `tier`), senão `inherit`.
+  const invalidasDeTier = [];
+  const tierDaFase = new Map();
+  for (const f of phases) {
+    const v = tierDeclarado(f.tier);
+    if (v && !TIERS.includes(v)) invalidasDeTier.push({ campo: "Tier", valor: `${f.id}: ${v}` });
+    tierDaFase.set(f.id, v && TIERS.includes(v) ? v : null);
+  }
   const larguraDeclarada = !decl.ausentes.some((a) => a.campo === "Largura do ciclo");
 
   const lista = [];
@@ -156,7 +175,11 @@ export function lerPlano(texto, codigo = codigoDoNucleo()) {
       marcas: marcasDo(t.satisfiesRaw),
       publicacao: codigo.publicacao.filter((p) => texto.includes(p)),
       clinica: outputs.filter((o) => casaAlgum(o, codigo.caminhosClinicos)),
+      tier: tierDaFase.get(t.phase) ?? TIER_PADRAO,
     };
+    const tierDaTask = tierDeclarado(t.bullets.get("Tier"));
+    if (tierDaTask && !TIERS.includes(tierDaTask)) invalidasDeTier.push({ campo: "Tier", valor: tierDaTask, task: t.id });
+    else if (tierDaTask) task.tier = tierDaTask;
     lista.push(task);
   }
   const rebaixadas = lista.filter(
@@ -173,12 +196,13 @@ export function lerPlano(texto, codigo = codigoDoNucleo()) {
   for (const task of lista) task.classe = classificar(task);
   const plano = {
     ciclo,
-    invalidas: decl.invalidas,
+    invalidas: [...decl.invalidas, ...invalidasDeTier],
     largura: larguraDeclarada ? decl.largura : BOTOES.larguraPadrao,
     larguraDeclarada,
     fases: phases.map((f) => ({
       id: f.id,
       modelo: f.model,
+      tier: tierDaFase.get(f.id) ?? TIER_PADRAO,
       tasks: lista.filter((t) => t.fase === f.id).map((t) => t.id),
     })),
     tasks: lista,
