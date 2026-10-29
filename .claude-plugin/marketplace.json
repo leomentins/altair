@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "altair",
+  "description": "Marketplace do Altair: a condução de ciclo por sessão como plugin.",
+  "owner": {
+    "name": "altair maintainers"
+  },
+  "plugins": [
+    {
+      "name": "altair",
+      "description": "Condução de ciclo por sessão: núcleo sem dependência, a skill de condução e os guards de nonce, alcance e fim da operária.",
+      "source": "./plugins/altair",
+      "category": "development"
+    }
+  ]
+}
